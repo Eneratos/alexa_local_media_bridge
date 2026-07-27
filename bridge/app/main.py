@@ -12,6 +12,7 @@ from http.server import (
 )
 from urllib.parse import urlparse
 
+from app_version import BRIDGE_VERSION
 from config_validation import (
     validate_environment,
 )
@@ -59,13 +60,6 @@ PORT = int(
     )
 )
 
-BRIDGE_VERSION = (
-    os.environ.get(
-        "BRIDGE_VERSION",
-        "development",
-    ).strip()
-    or "development"
-)
 
 CONTROL_SECRET = os.environ[
     "CONTROL_SECRET"
@@ -293,7 +287,7 @@ class BridgeHandler(
 
         headers = {
             "User-Agent":
-                "AlexaMediaBridge/1.0.1",
+                f"AlexaMediaBridge/{BRIDGE_VERSION}",
             "Accept-Encoding":
                 "identity",
         }

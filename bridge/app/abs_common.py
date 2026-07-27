@@ -7,6 +7,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+from app_version import BRIDGE_VERSION
+
 
 AUDIOBOOKSHELF_URL = os.environ.get(
     "AUDIOBOOKSHELF_URL",
@@ -60,7 +62,7 @@ def abs_json(
         "Accept":
             "application/json",
         "User-Agent":
-            "AlexaMediaBridge/1.0.1",
+            f"AlexaMediaBridge/{BRIDGE_VERSION}",
     }
 
     if payload is not None:

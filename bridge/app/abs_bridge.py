@@ -12,6 +12,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+from app_version import BRIDGE_VERSION
 from abs_common import (
     AUDIOBOOKSHELF_TOKEN,
     AUDIOBOOKSHELF_URL,
@@ -671,7 +672,7 @@ def resolve_audiobook(
                 "clientName":
                     "Alexa Media Bridge",
                 "clientVersion":
-                    "1.0.1",
+                    BRIDGE_VERSION,
                 "manufacturer":
                     "Amazon",
                 "model":
@@ -1891,7 +1892,7 @@ def try_proxy_abs_stream(
         "Accept-Encoding":
             "identity",
         "User-Agent":
-            "AlexaMediaBridge/1.0.1",
+            f"AlexaMediaBridge/{BRIDGE_VERSION}",
     }
 
     range_header = handler.headers.get(

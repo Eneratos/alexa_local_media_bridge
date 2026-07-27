@@ -101,6 +101,69 @@ elif not bridge_license_path.is_file():
 elif license_path.read_bytes() != bridge_license_path.read_bytes():
     errors.append("bridge/LICENSE differs from the root LICENSE.")
 
+app_version_path = (
+    root / "bridge" / "app" / "app_version.py"
+)
+
+if not app_version_path.is_file():
+    errors.append(
+        "bridge/app/app_version.py is missing."
+    )
+
+runtime_version_consumers = (
+    root / "bridge" / "app" / "main.py",
+    root / "bridge" / "app" / "abs_common.py",
+    root / "bridge" / "app" / "abs_bridge.py",
+)
+
+for path in runtime_version_consumers:
+    source = path.read_text(
+        encoding="utf-8"
+    )
+
+    if (
+        "from app_version import BRIDGE_VERSION"
+        not in source
+    ):
+        errors.append(
+            f"{path.relative_to(root)} does not import "
+            "BRIDGE_VERSION from app_version."
+        )
+
+runtime_version_patterns = (
+    re.compile(
+        r"AlexaMediaBridge/"
+        r"[0-9]+\.[0-9]+\.[0-9]+"
+    ),
+    re.compile(
+        r'"clientVersion"\s*:\s*'
+        r'"[0-9]+\.[0-9]+\.[0-9]+"'
+    ),
+)
+
+for path in sorted(
+    (root / "bridge" / "app").glob("*.py")
+):
+    source = path.read_text(
+        encoding="utf-8"
+    )
+
+    for pattern in runtime_version_patterns:
+        for match in pattern.finditer(source):
+            line_number = (
+                source.count(
+                    "\n",
+                    0,
+                    match.start(),
+                )
+                + 1
+            )
+
+            errors.append(
+                f"{path.relative_to(root)}:{line_number} "
+                "contains a hard-coded runtime version."
+            )
+
 if errors:
     print("Version consistency check failed:", file=sys.stderr)
     for error in errors:
