@@ -1,0 +1,359 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+  packages: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  IMAGE_NAME: ghcr.io/eneratos/alexa-local-media-bridge
+
+jobs:
+  publish-image:
+    name: Publish multi-architecture image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@v7
+
+      - name: Validate release tag
+        id: version
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          then
+            echo "Invalid release tag: $GITHUB_REF_NAME" >&2
+            exit 1
+          fi
+
+          project_version="$(
+            tr -d "[:space:]" < VERSION
+          )"
+          tag_version="${GITHUB_REF_NAME#v}"
+
+          if [[ "$tag_version" != "$project_version" ]]
+          then
+            echo "Release tag version $tag_version does not match VERSION $project_version." >&2
+            exit 1
+          fi
+
+          echo "value=$tag_version" \
+            >>"$GITHUB_OUTPUT"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate container metadata
+        id: metadata
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest
+          labels: |
+            org.opencontainers.image.title=Alexa Local Media Bridge
+            org.opencontainers.image.description=Local media bridge for Alexa, Navidrome, and Audiobookshelf
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.version.outputs.value }}
+
+      - name: Build and publish container image
+        uses: docker/build-push-action@v7
+        with:
+          context: ./bridge
+          file: ./bridge/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.metadata.outputs.tags }}
+          labels: ${{ steps.metadata.outputs.labels }}
+          build-args: |
+            VERSION=${{ steps.version.outputs.value }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: mode=max
+          sbom: true
+
+  publish-release:
+    name: Publish GitHub release
+    runs-on: ubuntu-latest
+    needs:
+      - publish-image
+
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: skill/lambda/package-lock.json
+
+      - name: Validate release tag
+        id: version
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          then
+            echo "Invalid release tag: $GITHUB_REF_NAME" >&2
+            exit 1
+          fi
+
+          project_version="$(
+            tr -d "[:space:]" < VERSION
+          )"
+          tag_version="${GITHUB_REF_NAME#v}"
+
+          if [[ "$tag_version" != "$project_version" ]]
+          then
+            echo "Release tag version $tag_version does not match VERSION $project_version." >&2
+            exit 1
+          fi
+
+          echo "value=$tag_version" \
+            >>"$GITHUB_OUTPUT"
+
+      - name: Prepare Lambda package
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          mkdir -p \
+            dist/lambda \
+            dist/release
+
+          cp \
+            skill/lambda/index.js \
+            skill/lambda/package.json \
+            skill/lambda/package-lock.json \
+            LICENSE \
+            dist/lambda/
+
+      - name: Install production dependencies
+        working-directory: dist/lambda
+        run: npm ci --omit=dev
+
+      - name: Validate Lambda JavaScript
+        working-directory: dist/lambda
+        run: node --check index.js
+
+      - name: Create flat Lambda ZIP
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          python - <<'PY'
+          import os
+          import zipfile
+          from pathlib import Path
+
+          version = os.environ["VERSION"]
+          source = Path("dist/lambda")
+          target = Path(
+              "dist/release/"
+              f"alexa_local_media_bridge_lambda_"
+              f"{version}.zip"
+          )
+
+          with zipfile.ZipFile(
+              target,
+              "w",
+              zipfile.ZIP_DEFLATED,
+          ) as archive:
+              for path in sorted(source.rglob("*")):
+                  if path.is_file():
+                      archive.write(
+                          path,
+                          path.relative_to(source),
+                      )
+
+          print(f"Created: {target}")
+          PY
+
+      - name: Verify Lambda ZIP structure
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          python - <<'PY'
+          import os
+          import zipfile
+          from pathlib import Path
+
+          version = os.environ["VERSION"]
+          path = Path(
+              "dist/release/"
+              f"alexa_local_media_bridge_lambda_"
+              f"{version}.zip"
+          )
+
+          required = {
+              "index.js",
+              "package.json",
+              "package-lock.json",
+              "LICENSE",
+              "node_modules/ask-sdk-core/package.json",
+          }
+
+          with zipfile.ZipFile(path) as archive:
+              names = set(archive.namelist())
+
+          missing = sorted(required - names)
+
+          if missing:
+              raise SystemExit(
+                  "Missing Lambda ZIP entries: "
+                  + ", ".join(missing)
+              )
+
+          forbidden = [
+              name
+              for name in names
+              if name.startswith("lambda/")
+              or name.startswith("dist/")
+              or name.startswith(
+                  f"lambda_{version}/"
+              )
+          ]
+
+          if forbidden:
+              raise SystemExit(
+                  "Lambda ZIP contains a wrapper directory."
+              )
+
+          print("Lambda ZIP structure is valid.")
+          print(f"Files: {len(names)}")
+          PY
+
+      - name: Prepare interaction models
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          cp \
+            skill/interaction_model/de_DE.json \
+            "dist/release/alexa_local_media_bridge_interaction_model_de_DE_${VERSION}.json"
+
+          cp \
+            skill/interaction_model/en_US.json \
+            "dist/release/alexa_local_media_bridge_interaction_model_en_US_${VERSION}.json"
+
+      - name: Validate release JSON files
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          files = sorted(
+              Path("dist/release").glob("*.json")
+          )
+
+          if len(files) != 2:
+              raise SystemExit(
+                  f"Expected 2 interaction models, "
+                  f"found {len(files)}."
+              )
+
+          for path in files:
+              with path.open(
+                  "r",
+                  encoding="utf-8",
+              ) as handle:
+                  json.load(handle)
+
+              print(f"Valid: {path}")
+          PY
+
+      - name: Build installation archive
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          INSTALL_ASSET_DIR="${RUNNER_TEMP}/alexa_local_media_bridge_install_assets"
+          rm -rf "$INSTALL_ASSET_DIR"
+          ./scripts/build_release_assets.sh "$VERSION" "$INSTALL_ASSET_DIR"
+          cp "$INSTALL_ASSET_DIR/alexa_local_media_bridge_install_${VERSION}.tar.gz" dist/release/
+
+      - name: Create and verify checksums
+        working-directory: dist/release
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          sha256sum \
+            ./*.zip \
+            ./*.json \
+            ./*.tar.gz \
+            >SHA256SUMS
+
+          sha256sum --check SHA256SUMS
+
+      - name: List release files
+        run: |
+          find dist/release \
+            -maxdepth 1 \
+            -type f \
+            -printf '%f\n' \
+          | sort
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v3
+        with:
+          generate_release_notes: true
+          make_latest: true
+          fail_on_unmatched_files: true
+          body: |
+            ## Container image
+
+            ```text
+            ghcr.io/eneratos/alexa-local-media-bridge:${{ steps.version.outputs.value }}
+            ```
+
+            Multi-architecture images are available for:
+
+            - `linux/amd64`
+            - `linux/arm64`
+
+            ## Release assets
+
+            - Flat AWS Lambda deployment ZIP
+            - German Alexa interaction model
+            - English Alexa interaction model
+            - Installation bundle
+            - SHA-256 checksums
+          files: |
+            dist/release/*

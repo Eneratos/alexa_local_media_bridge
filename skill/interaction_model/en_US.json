@@ -1,0 +1,224 @@
+{
+    "interactionModel": {
+        "languageModel": {
+            "intents": [
+                {
+                    "slots": [
+                        {
+                            "name": "Query",
+                            "type": "AMAZON.SearchQuery"
+                        }
+                    ],
+                    "name": "PlaySongIntent",
+                    "samples": [
+                        "play {Query}",
+                        "start {Query}",
+                        "play the song {Query}",
+                        "play the track {Query}",
+                        "find the song {Query}"
+                    ]
+                },
+                {
+                    "slots": [
+                        {
+                            "name": "Query",
+                            "type": "AMAZON.SearchQuery"
+                        }
+                    ],
+                    "name": "PlayAlbumIntent",
+                    "samples": [
+                        "play the album {Query}",
+                        "start the album {Query}",
+                        "play album {Query}",
+                        "play me the album {Query}"
+                    ]
+                },
+                {
+                    "slots": [
+                        {
+                            "name": "Query",
+                            "type": "AMAZON.SearchQuery"
+                        }
+                    ],
+                    "name": "PlayArtistIntent",
+                    "samples": [
+                        "play music by {Query}",
+                        "start music by {Query}",
+                        "play songs by {Query}",
+                        "play something by {Query}"
+                    ]
+                },
+                {
+                    "slots": [
+                        {
+                            "name": "Query",
+                            "type": "AMAZON.SearchQuery"
+                        }
+                    ],
+                    "name": "PlayPlaylistIntent",
+                    "samples": [
+                        "play the playlist {Query}",
+                        "start the playlist {Query}",
+                        "play my playlist {Query}",
+                        "start playlist {Query}"
+                    ]
+                },
+                {
+                    "slots": [],
+                    "name": "PlayRandomIntent",
+                    "samples": [
+                        "play random music",
+                        "play random songs",
+                        "start shuffle",
+                        "shuffle my music",
+                        "play my music randomly"
+                    ]
+                },
+                {
+                    "slots": [
+                        {
+                            "name": "Query",
+                            "type": "AMAZON.SearchQuery"
+                        }
+                    ],
+                    "name": "PlayAudiobookIntent",
+                    "samples": [
+                        "play the audiobook {Query}",
+                        "start the audiobook {Query}",
+                        "listen to {Query}",
+                        "play episode {Query}",
+                        "play the audio drama {Query}"
+                    ]
+                },
+                {
+                    "slots": [
+                        {
+                            "name": "Query",
+                            "type": "AMAZON.SearchQuery"
+                        }
+                    ],
+                    "name": "PlayAudiobookFromStartIntent",
+                    "samples": [
+                        "play {Query} from the beginning",
+                        "start {Query} from the beginning",
+                        "play the audiobook {Query} from the beginning",
+                        "start the audiobook {Query} from the beginning",
+                        "play episode {Query} from the beginning",
+                        "start the audiobook from the beginning",
+                        "play the audiobook from the beginning",
+                        "play the episode from the beginning"
+                    ]
+                },
+                {
+                    "slots": [
+                        {
+                            "name": "Duration",
+                            "type": "AMAZON.DURATION"
+                        }
+                    ],
+                    "name": "SeekAudiobookForwardIntent",
+                    "samples": [
+                        "skip forward by {Duration}",
+                        "jump forward {Duration}",
+                        "fast forward {Duration}",
+                        "go forward {Duration}",
+                        "skip ahead {Duration}"
+                    ]
+                },
+                {
+                    "slots": [
+                        {
+                            "name": "Duration",
+                            "type": "AMAZON.DURATION"
+                        }
+                    ],
+                    "name": "SeekAudiobookBackwardIntent",
+                    "samples": [
+                        "skip back by {Duration}",
+                        "jump back {Duration}",
+                        "rewind {Duration}",
+                        "go back {Duration}",
+                        "skip backward {Duration}"
+                    ]
+                },
+                {
+                    "slots": [
+                        {
+                            "name": "ChapterNumber",
+                            "type": "AMAZON.NUMBER"
+                        }
+                    ],
+                    "name": "PlayAudiobookChapterIntent",
+                    "samples": [
+                        "start chapter {ChapterNumber}",
+                        "play chapter {ChapterNumber}",
+                        "skip to chapter {ChapterNumber}",
+                        "go to chapter {ChapterNumber}",
+                        "start the audiobook at chapter {ChapterNumber}",
+                        "play the audiobook from chapter {ChapterNumber}"
+                    ]
+                },
+                {
+                    "slots": [],
+                    "name": "NextAudiobookChapterIntent",
+                    "samples": [
+                        "next chapter",
+                        "play the next chapter",
+                        "start the next chapter",
+                        "skip to the next chapter",
+                        "continue with the next chapter"
+                    ]
+                },
+                {
+                    "slots": [],
+                    "name": "PreviousAudiobookChapterIntent",
+                    "samples": [
+                        "previous chapter",
+                        "play the previous chapter",
+                        "start the previous chapter",
+                        "skip to the previous chapter",
+                        "go back one chapter"
+                    ]
+                },
+                {
+                    "name": "AMAZON.HelpIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.CancelIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.StopIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.PauseIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.ResumeIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.NextIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.PreviousIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.FallbackIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.NavigateHomeIntent",
+                    "samples": []
+                }
+            ],
+            "types": [],
+            "invocationName": "media bridge"
+        }
+    }
+}

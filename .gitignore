@@ -1,0 +1,44 @@
+# Secrets und lokale Konfiguration
+.env
+.env.*
+!.env.example
+
+# Node.js
+node_modules/
+npm_debug.log*
+package.zip
+lambda.zip
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Sicherungen und Archive
+*.zip
+*.tar
+*.tar.gz
+*.bak
+*.bak_*
+*.bak-*
+backup_*/
+update_*/
+
+# Laufzeitdaten
+logs/
+tmp/
+.cache/
+
+# Editoren und Betriebssystem
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local Alexa deployment configuration
+skill/manifest/skill.local.json
+
+bridge/.env
+bridge/.env.backup.*
+
+# Generated release and test artifacts
+dist/

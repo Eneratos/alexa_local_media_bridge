@@ -1,0 +1,34 @@
+{
+  "version": "1.0",
+  "session": {
+    "new": true,
+    "sessionId": "test-session-en",
+    "application": {
+      "applicationId": "test-application"
+    },
+    "user": {
+      "userId": "test-user"
+    }
+  },
+  "context": {
+    "System": {
+      "application": {
+        "applicationId": "test-application"
+      },
+      "user": {
+        "userId": "test-user"
+      },
+      "device": {
+        "deviceId": "test-device",
+        "supportedInterfaces": {}
+      },
+      "apiEndpoint": "https://api.amazonalexa.com"
+    }
+  },
+  "request": {
+    "type": "LaunchRequest",
+    "requestId": "test-request-en",
+    "timestamp": "2026-01-01T00:00:00Z",
+    "locale": "en-US"
+  }
+}

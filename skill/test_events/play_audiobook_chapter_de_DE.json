@@ -1,0 +1,54 @@
+{
+  "version": "1.0",
+  "session": {
+    "new": false,
+    "sessionId": "test-session-chapter-three-de_DE",
+    "application": {
+      "applicationId": "test-application"
+    },
+    "user": {
+      "userId": "test-user"
+    }
+  },
+  "context": {
+    "AudioPlayer": {
+      "playerActivity": "IDLE",
+      "token": "",
+      "offsetInMilliseconds": 0
+    },
+    "System": {
+      "application": {
+        "applicationId": "test-application"
+      },
+      "user": {
+        "userId": "test-user"
+      },
+      "device": {
+        "deviceId": "test-device",
+        "supportedInterfaces": {
+          "AudioPlayer": {}
+        }
+      },
+      "apiEndpoint": "https://api.amazonalexa.com"
+    }
+  },
+  "request": {
+    "type": "IntentRequest",
+    "requestId": "test-request-chapter-three-de_DE",
+    "timestamp": "2026-01-01T00:00:00Z",
+    "locale": "de-DE",
+    "dialogState": "COMPLETED",
+    "intent": {
+      "name": "PlayAudiobookChapterIntent",
+      "confirmationStatus": "NONE",
+      "slots": {
+        "ChapterNumber": {
+          "name": "ChapterNumber",
+          "value": "3",
+          "confirmationStatus": "NONE",
+          "source": "USER"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,61 @@
+{
+    "manifest": {
+        "manifestVersion": "1.0",
+        "publishingInformation": {
+            "locales": {
+                "de-DE": {
+                    "name": "Medienbrücke",
+                    "summary": "Verbindet Alexa mit deinen selbstgehosteten Musik- und Hörbuchbibliotheken.",
+                    "description": "Medienbrücke verbindet Alexa mit einer selbst betriebenen Media Bridge für Navidrome und Audiobookshelf. Der Skill kann Titel, Alben, Künstler, Playlists und Hörbücher abspielen und unterstützt Hörbuchfortschritt, Kapitel sowie Zeitsprünge.",
+                    "examplePhrases": [
+                        "Alexa, öffne Medienbrücke",
+                        "Alexa, sage Medienbrücke, spiele Musik von Placebo",
+                        "Alexa, sage Medienbrücke, spiele das Hörbuch Benjamin rettet den Zoo"
+                    ],
+                    "keywords": [
+                        "Medien",
+                        "Musik",
+                        "Hörbücher",
+                        "Navidrome",
+                        "Audiobookshelf"
+                    ]
+                },
+                "en-US": {
+                    "name": "Media Bridge",
+                    "summary": "Connects Alexa to your self-hosted music and audiobook libraries.",
+                    "description": "Media Bridge connects Alexa to a self-hosted media bridge for Navidrome and Audiobookshelf. The skill can play songs, albums, artists, playlists, and audiobooks and supports audiobook progress, chapters, and seeking.",
+                    "examplePhrases": [
+                        "Alexa, open media bridge",
+                        "Alexa, ask media bridge to play music by Placebo",
+                        "Alexa, ask media bridge to play the audiobook The Hobbit"
+                    ],
+                    "keywords": [
+                        "Media",
+                        "Music",
+                        "Audiobooks",
+                        "Navidrome",
+                        "Audiobookshelf"
+                    ]
+                }
+            },
+            "isAvailableWorldwide": false,
+            "distributionCountries": [
+                "DE"
+            ],
+            "category": "STREAMING_SERVICE",
+            "testingInstructions": "Private self-hosted skill. Not currently intended for public certification."
+        },
+        "apis": {
+            "custom": {
+                "endpoint": {
+                    "uri": "__LAMBDA_ARN__"
+                },
+                "interfaces": [
+                    {
+                        "type": "AUDIO_PLAYER"
+                    }
+                ]
+            }
+        }
+    }
+}

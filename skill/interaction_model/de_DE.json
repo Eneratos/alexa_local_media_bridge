@@ -1,0 +1,246 @@
+{
+    "interactionModel": {
+        "languageModel": {
+            "intents": [
+                {
+                    "slots": [
+                        {
+                            "name": "Query",
+                            "type": "AMAZON.SearchQuery"
+                        }
+                    ],
+                    "name": "PlaySongIntent",
+                    "samples": [
+                        "spiele {Query}",
+                        "spiel {Query}",
+                        "starte {Query}",
+                        "spiele den titel {Query}",
+                        "spiele das lied {Query}",
+                        "suche den titel {Query}"
+                    ]
+                },
+                {
+                    "slots": [
+                        {
+                            "name": "Query",
+                            "type": "AMAZON.SearchQuery"
+                        }
+                    ],
+                    "name": "PlayAlbumIntent",
+                    "samples": [
+                        "spiele das album {Query}",
+                        "spiel das album {Query}",
+                        "starte das album {Query}",
+                        "spiele mir das album {Query}",
+                        "spiele album {Query}"
+                    ]
+                },
+                {
+                    "slots": [
+                        {
+                            "name": "Query",
+                            "type": "AMAZON.SearchQuery"
+                        }
+                    ],
+                    "name": "PlayArtistIntent",
+                    "samples": [
+                        "spiele musik von {Query}",
+                        "spiel musik von {Query}",
+                        "starte musik von {Query}",
+                        "spiele titel von {Query}",
+                        "spiele lieder von {Query}",
+                        "spiele etwas von {Query}"
+                    ]
+                },
+                {
+                    "slots": [
+                        {
+                            "name": "Query",
+                            "type": "AMAZON.SearchQuery"
+                        }
+                    ],
+                    "name": "PlayPlaylistIntent",
+                    "samples": [
+                        "spiele die playlist {Query}",
+                        "spiel die playlist {Query}",
+                        "starte die playlist {Query}",
+                        "spiele meine playlist {Query}",
+                        "starte playlist {Query}"
+                    ]
+                },
+                {
+                    "slots": [],
+                    "name": "PlayRandomIntent",
+                    "samples": [
+                        "spiele zufällige musik",
+                        "spiele zufällige titel",
+                        "starte die zufallswiedergabe",
+                        "starte zufallswiedergabe",
+                        "mische meine musik",
+                        "spiele meine musik zufällig"
+                    ]
+                },
+                {
+                    "slots": [
+                        {
+                            "name": "Query",
+                            "type": "AMAZON.SearchQuery"
+                        }
+                    ],
+                    "name": "PlayAudiobookIntent",
+                    "samples": [
+                        "spiele das hörbuch {Query}",
+                        "spiel das hörbuch {Query}",
+                        "starte das hörbuch {Query}",
+                        "spiele mir das hörbuch {Query}",
+                        "höre {Query}",
+                        "spiele die folge {Query}",
+                        "spiele das hörspiel {Query}",
+                        "starte das hörspiel {Query}",
+                        "höre das hörspiel {Query}",
+                        "spiele die hörspielfolge {Query}"
+                    ]
+                },
+                {
+                    "slots": [
+                        {
+                            "name": "Query",
+                            "type": "AMAZON.SearchQuery"
+                        }
+                    ],
+                    "name": "PlayAudiobookFromStartIntent",
+                    "samples": [
+                        "spiele {Query} von vorne ab",
+                        "spiel {Query} von vorne ab",
+                        "starte {Query} von vorne",
+                        "spiele das hörbuch {Query} von vorne",
+                        "spiel das hörbuch {Query} von vorne",
+                        "starte das hörbuch {Query} von vorne",
+                        "spiele die folge {Query} von vorne",
+                        "starte die folge {Query} von vorne",
+                        "starte das hörbuch von vorne",
+                        "spiele das hörbuch von vorne",
+                        "spiele die folge von vorne"
+                    ]
+                },
+                {
+                    "slots": [
+                        {
+                            "name": "Duration",
+                            "type": "AMAZON.DURATION"
+                        }
+                    ],
+                    "name": "SeekAudiobookForwardIntent",
+                    "samples": [
+                        "springe {Duration} vor",
+                        "springe {Duration} nach vorne",
+                        "spule {Duration} vor",
+                        "spule um {Duration} vor",
+                        "gehe {Duration} vor",
+                        "{Duration} vor",
+                        "überspringe {Duration}",
+                        "springe im hörbuch {Duration} vor",
+                        "spule das hörbuch {Duration} vor"
+                    ]
+                },
+                {
+                    "slots": [
+                        {
+                            "name": "Duration",
+                            "type": "AMAZON.DURATION"
+                        }
+                    ],
+                    "name": "SeekAudiobookBackwardIntent",
+                    "samples": [
+                        "springe {Duration} zurück",
+                        "springe {Duration} nach hinten",
+                        "spule {Duration} zurück",
+                        "spule um {Duration} zurück",
+                        "gehe {Duration} zurück",
+                        "{Duration} zurück",
+                        "wiederhole die letzten {Duration}",
+                        "springe im hörbuch {Duration} zurück",
+                        "spule das hörbuch {Duration} zurück"
+                    ]
+                },
+                {
+                    "slots": [
+                        {
+                            "name": "ChapterNumber",
+                            "type": "AMAZON.NUMBER"
+                        }
+                    ],
+                    "name": "PlayAudiobookChapterIntent",
+                    "samples": [
+                        "starte kapitel {ChapterNumber}",
+                        "spiele kapitel {ChapterNumber}",
+                        "springe zu kapitel {ChapterNumber}",
+                        "gehe zu kapitel {ChapterNumber}",
+                        "starte das hörbuch bei kapitel {ChapterNumber}",
+                        "spiele das hörbuch ab kapitel {ChapterNumber}"
+                    ]
+                },
+                {
+                    "slots": [],
+                    "name": "NextAudiobookChapterIntent",
+                    "samples": [
+                        "nächstes kapitel",
+                        "spiele das nächste kapitel",
+                        "starte das nächste kapitel",
+                        "springe zum nächsten kapitel",
+                        "weiter zum nächsten kapitel"
+                    ]
+                },
+                {
+                    "slots": [],
+                    "name": "PreviousAudiobookChapterIntent",
+                    "samples": [
+                        "vorheriges kapitel",
+                        "spiele das vorherige kapitel",
+                        "starte das vorherige kapitel",
+                        "springe zum vorherigen kapitel",
+                        "ein kapitel zurück"
+                    ]
+                },
+                {
+                    "name": "AMAZON.HelpIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.CancelIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.StopIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.PauseIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.ResumeIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.NextIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.PreviousIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.FallbackIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.NavigateHomeIntent",
+                    "samples": []
+                }
+            ],
+            "types": [],
+            "invocationName": "medienbrücke"
+        }
+    }
+}

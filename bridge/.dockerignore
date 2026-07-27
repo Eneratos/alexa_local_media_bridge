@@ -1,0 +1,7 @@
+.env
+compose*.yml
+__pycache__/
+*.pyc
+*.pyo
+app/test_navidrome.py
+app/sign_navidrome_url.py

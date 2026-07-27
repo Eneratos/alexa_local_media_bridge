@@ -1,0 +1,31 @@
+name: alexa-local-media-bridge
+
+services:
+  alexa-media-bridge:
+    image: ghcr.io/eneratos/alexa-local-media-bridge:${IMAGE_TAG:-1.0.0}
+    restart: unless-stopped
+    init: true
+    read_only: true
+
+    env_file:
+      - .env
+
+    expose:
+      - "8000"
+
+    networks:
+      - proxy
+
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+
+    cap_drop:
+      - ALL
+
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  proxy:
+    external: true
+    name: ${PROXY_NETWORK:-proxy}
