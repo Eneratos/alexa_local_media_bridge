@@ -2,6 +2,8 @@
 
 const Alexa = require('ask-sdk-core');
 const https = require('https');
+const SKILL_VERSION = require('./package.json').version;
+const SKILL_USER_AGENT = `AlexaMediaSkill/${SKILL_VERSION}`;
 
 const BRIDGE_BASE_URL = String(
     process.env.BRIDGE_BASE_URL || ''
@@ -48,7 +50,7 @@ const CONTROL_SECRET =
 
 if (!CONTROL_SECRET) {
     throw new Error(
-        'CONTROL_SECRET fehlt.'
+        'CONTROL_SECRET is not configured.'
     );
 }
 
@@ -85,7 +87,7 @@ function postJson(urlString, payload) {
                 'Content-Length':
                     Buffer.byteLength(body),
                 'User-Agent':
-                    'AlexaMediaSkill/0.3'
+                    SKILL_USER_AGENT
             }
         };
 
@@ -107,7 +109,7 @@ function postJson(urlString, payload) {
                         ) {
                             request.destroy(
                                 new Error(
-                                    'Bridge-Antwort ist zu groß.'
+                                    'Bridge response is too large.'
                                 )
                             );
                         }
@@ -126,7 +128,7 @@ function postJson(urlString, payload) {
                         } catch (error) {
                             reject(
                                 new Error(
-                                    'Bridge lieferte kein gültiges JSON.'
+                                    'Bridge returned invalid JSON.'
                                 )
                             );
                             return;
@@ -163,7 +165,7 @@ function postJson(urlString, payload) {
             function () {
                 request.destroy(
                     new Error(
-                        'Zeitüberschreitung beim Bridge-Aufruf.'
+                        'Bridge request timed out.'
                     )
                 );
             }
@@ -363,7 +365,7 @@ async function sendScrobble(
     } catch (error) {
         /*
          * A failed scrobble
-         * die Audiowiedergabe nicht stören.
+         * must not interfere with audio playback.
          */
         console.error(
             'Scrobble error:',
@@ -425,7 +427,7 @@ async function sendAudiobookProgress(
         );
     } catch (error) {
         /*
-         * Ein fehlgeschlagener Fortschritts-Sync
+         * A failed progress sync
          * must not interfere with the AudioPlayer response.
          */
         console.error(

@@ -12,8 +12,8 @@ from bridge_common import (
 def main():
     if len(sys.argv) < 2:
         raise SystemExit(
-            "Aufruf: sign_navidrome_url.py "
-            "\"Suchbegriff\" [Gültigkeit]"
+            "Usage: sign_navidrome_url.py "
+            "\"search query\" [lifetime]"
         )
 
     query = sys.argv[1]
@@ -60,7 +60,7 @@ def main():
     song_id = str(song["id"])
 
     print(
-        "Gewählt: "
+        "Selected: "
         + str(song.get("artist", "unknown"))
         + " – "
         + str(song.get("title", "unknown"))

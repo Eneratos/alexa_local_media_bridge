@@ -327,12 +327,12 @@ class BridgeHandler(
             )
 
             print(
-                "Navidrome meldet HTTP "
+                "Navidrome returned HTTP "
                 + str(error.code)
-                + " für Range "
+                + " for Range "
                 + (
                     requested_range
-                    or "<keine>"
+                    or "<none>"
                 ),
                 flush=True,
             )
@@ -379,7 +379,7 @@ class BridgeHandler(
 
         except Exception as error:
             print(
-                "Navidrome-Verbindungsfehler: "
+                "Navidrome connection error: "
                 + type(error).__name__,
                 flush=True,
             )
@@ -1030,8 +1030,8 @@ class BridgeHandler(
                 {
                     "status": "error",
                     "error":
-                        "Der Mediendienst ist momentan "
-                        "nicht verfügbar.",
+                        "The media service is currently "
+                        "unavailable.",
                 },
                 status=502,
             )

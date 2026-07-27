@@ -505,8 +505,7 @@ def load_artist_queue(artist_id):
 
     if not songs:
         raise LookupError(
-            "Für diesen Künstler wurden "
-            "no tracks found."
+            "No tracks were found for this artist."
         )
 
     artist_name = _text(
@@ -586,7 +585,7 @@ def load_random_queue(seed):
 
     if not songs:
         raise LookupError(
-            "Die Musikbibliothek ist leer."
+            "The music library is empty."
         )
 
     def random_sort_key(song):
@@ -611,7 +610,7 @@ def load_random_queue(seed):
     return {
         "kind": "random",
         "resourceId": seed,
-        "title": "Zufallswiedergabe",
+        "title": "Random playback",
         "artist": "",
         "tracks": songs,
     }
@@ -647,7 +646,7 @@ def load_queue(
         )
 
     raise ValueError(
-        "Unbekannter Warteschlangentyp."
+        "Unknown queue type."
     )
 
 
@@ -672,7 +671,7 @@ def resolve_navidrome_queue(
 
     if not query:
         raise ValueError(
-            "Der Suchbegriff ist leer."
+            "The search query is empty."
         )
 
     if mode == "playlist":

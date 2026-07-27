@@ -22,7 +22,7 @@ _token_b64 = os.environ.get(
 
 if not _token_b64:
     raise RuntimeError(
-        "AUDIOBOOKSHELF_TOKEN_B64 fehlt."
+        "AUDIOBOOKSHELF_TOKEN_B64 is not configured."
     )
 
 try:
@@ -31,7 +31,7 @@ try:
     ).decode("utf-8")
 except Exception as error:
     raise RuntimeError(
-        "Audiobookshelf-Token ist ungültig kodiert."
+        "Audiobookshelf token is not valid base64-encoded UTF-8."
     ) from error
 
 
@@ -104,7 +104,7 @@ def abs_json(
 
     except urllib.error.URLError as error:
         raise RuntimeError(
-            "Audiobookshelf ist nicht erreichbar: "
+            "Audiobookshelf is not reachable: "
             + str(error.reason)
         ) from error
 
@@ -115,8 +115,8 @@ def abs_json(
         text = raw.decode("utf-8")
     except UnicodeDecodeError as error:
         raise RuntimeError(
-            "Audiobookshelf lieferte keine "
-            "gültige UTF-8-Antwort."
+            "Audiobookshelf returned an invalid "
+            "UTF-8 response."
         ) from error
 
     if not expect_json:
@@ -128,6 +128,6 @@ def abs_json(
         return json.loads(text)
     except json.JSONDecodeError as error:
         raise RuntimeError(
-            "Audiobookshelf lieferte kein "
-            "gültiges JSON."
+            "Audiobookshelf returned invalid "
+            "JSON."
         ) from error

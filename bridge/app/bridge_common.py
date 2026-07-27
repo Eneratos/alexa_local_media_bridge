@@ -10,6 +10,8 @@ import time
 import urllib.parse
 import urllib.request
 
+from app_version import BRIDGE_VERSION
+
 
 STREAM_SECRET = os.environ["STREAM_SECRET"].encode("utf-8")
 
@@ -79,7 +81,7 @@ def navidrome_json(endpoint, parameters=None):
     request = urllib.request.Request(
         navidrome_url(endpoint, parameters),
         headers={
-            "User-Agent": "AlexaMediaBridge/0.3",
+            "User-Agent": f"AlexaMediaBridge/{BRIDGE_VERSION}",
         },
     )
 
@@ -181,7 +183,7 @@ def create_navidrome_stream_url(
         or lifetime_seconds > MAX_TOKEN_LIFETIME
     ):
         raise ValueError(
-            "Gültigkeit muss zwischen 1 und "
+            "Lifetime must be between 1 and "
             f"{MAX_TOKEN_LIFETIME} seconds."
         )
 

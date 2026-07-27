@@ -124,6 +124,8 @@ runtime_version_consumers = (
     root / "bridge" / "app" / "main.py",
     root / "bridge" / "app" / "abs_common.py",
     root / "bridge" / "app" / "abs_bridge.py",
+    root / "bridge" / "app" / "bridge_common.py",
+    root / "bridge" / "app" / "test_navidrome.py",
 )
 
 for path in runtime_version_consumers:
@@ -140,10 +142,38 @@ for path in runtime_version_consumers:
             "BRIDGE_VERSION from app_version."
         )
 
+lambda_index_path = (
+    root / "skill" / "lambda" / "index.js"
+)
+
+lambda_index_source = lambda_index_path.read_text(
+    encoding="utf-8"
+)
+
+if (
+    "const SKILL_VERSION = "
+    "require('./package.json').version;"
+    not in lambda_index_source
+):
+    errors.append(
+        "skill/lambda/index.js does not read "
+        "SKILL_VERSION from package.json."
+    )
+
+if (
+    "const SKILL_USER_AGENT = "
+    "`AlexaMediaSkill/${SKILL_VERSION}`;"
+    not in lambda_index_source
+):
+    errors.append(
+        "skill/lambda/index.js does not derive "
+        "its User-Agent from SKILL_VERSION."
+    )
+
 runtime_version_patterns = (
     re.compile(
-        r"AlexaMediaBridge/"
-        r"[0-9]+\.[0-9]+\.[0-9]+"
+        r"AlexaMedia(?:Bridge|Skill)/"
+        r"[0-9]+(?:\.[0-9]+)+"
     ),
     re.compile(
         r'"clientVersion"\s*:\s*'
@@ -151,9 +181,15 @@ runtime_version_patterns = (
     ),
 )
 
-for path in sorted(
+runtime_version_files = sorted(
     (root / "bridge" / "app").glob("*.py")
-):
+)
+
+runtime_version_files.append(
+    lambda_index_path
+)
+
+for path in runtime_version_files:
     source = path.read_text(
         encoding="utf-8"
     )

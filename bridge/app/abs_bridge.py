@@ -229,7 +229,7 @@ def create_abs_stream_url(
 ):
     if not PUBLIC_BASE_URL:
         raise RuntimeError(
-            "PUBLIC_BASE_URL fehlt."
+            "PUBLIC_BASE_URL is not configured."
         )
 
     if lifetime is None:
@@ -411,7 +411,7 @@ def _select_search_result(
 ):
     if not AUDIOBOOKSHELF_LIBRARY_ID:
         raise RuntimeError(
-            "AUDIOBOOKSHELF_LIBRARY_ID fehlt."
+            "AUDIOBOOKSHELF_LIBRARY_ID is not configured."
         )
 
     response = abs_json(
@@ -480,8 +480,8 @@ def _select_track(
 ):
     if not tracks:
         raise LookupError(
-            "Audiobookshelf lieferte "
-            "keine Audio-Tracks."
+            "Audiobookshelf returned "
+            "no audio tracks."
         )
 
     selected = tracks[0]
@@ -700,8 +700,8 @@ def resolve_audiobook(
 
     if not session_id:
         raise RuntimeError(
-            "Audiobookshelf lieferte "
-            "keine Session-ID."
+            "Audiobookshelf returned "
+            "no session ID."
         )
 
     try:
@@ -725,8 +725,8 @@ def resolve_audiobook(
 
         if not content_url:
             raise RuntimeError(
-                "Der Audiobookshelf-Track "
-                "hat keine Content-URL."
+                "The Audiobookshelf track "
+                "does not have a content URL."
             )
 
         track_start = float(
@@ -1873,7 +1873,7 @@ def try_proxy_abs_stream(
 
         if not content_url:
             raise ValueError(
-                "Content-URL fehlt."
+                "Content URL is missing."
             )
 
     except Exception:
@@ -1923,7 +1923,7 @@ def try_proxy_abs_stream(
 
     except urllib.error.HTTPError as error:
         print(
-            "Audiobookshelf meldet HTTP "
+            "Audiobookshelf returned HTTP "
             + str(error.code),
             flush=True,
         )
@@ -1945,7 +1945,7 @@ def try_proxy_abs_stream(
 
     except Exception as error:
         print(
-            "Audiobookshelf-Streamfehler: "
+            "Audiobookshelf stream error: "
             + type(error).__name__,
             flush=True,
         )

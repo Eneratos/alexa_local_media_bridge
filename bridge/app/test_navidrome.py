@@ -10,6 +10,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+from app_version import BRIDGE_VERSION
+
 
 BASE_URL = os.environ.get(
     "NAVIDROME_URL",
@@ -71,7 +73,7 @@ def api_request(endpoint, parameters=None):
     request = urllib.request.Request(
         create_url(endpoint, parameters),
         headers={
-            "User-Agent": "AlexaMediaBridge/0.3",
+            "User-Agent": f"AlexaMediaBridge/{BRIDGE_VERSION}",
         },
     )
 
@@ -145,21 +147,21 @@ def main():
         search_result.get("song")
     )
 
-    print("=== Suche ===")
-    print(f"Suchbegriff:   {query}")
-    print(f"Künstler:      {len(artists)}")
-    print(f"Alben:         {len(albums)}")
-    print(f"Track:         {len(songs)}")
+    print("=== Search ===")
+    print(f"Query:         {query}")
+    print(f"Artists:       {len(artists)}")
+    print(f"Albums:        {len(albums)}")
+    print(f"Tracks:        {len(songs)}")
 
     for artist in artists[:3]:
         print(
-            "Künstlerfund:  "
+            "Artist match:   "
             + str(artist.get("name", "unknown"))
         )
 
     for album in albums[:3]:
         print(
-            "Albumfund:     "
+            "Album match:    "
             + str(album.get("name", "unknown"))
         )
 
@@ -191,13 +193,13 @@ def main():
     song_id = str(song["id"])
 
     print()
-    print("=== Gewählter Testtitel ===")
+    print("=== Selected test track ===")
     print(
         "Track:         "
         + str(song.get("title", "unknown"))
     )
     print(
-        "Künstler:      "
+        "Artist:         "
         + str(song.get("artist", "unknown"))
     )
     print(
@@ -205,7 +207,7 @@ def main():
         + str(song.get("album", "unknown"))
     )
     print(
-        "Quelldatei:    "
+        "Source file:    "
         + str(song.get("suffix", "unknown"))
     )
     print(
@@ -227,7 +229,7 @@ def main():
     stream_request = urllib.request.Request(
         stream_url,
         headers={
-            "User-Agent": "AlexaMediaBridge/0.3",
+            "User-Agent": f"AlexaMediaBridge/{BRIDGE_VERSION}",
             "Range": "bytes=0-65535",
         },
     )
@@ -239,14 +241,14 @@ def main():
         audio_data = response.read(65536)
 
         print()
-        print("=== Streamtest ===")
-        print(f"HTTP-Status:   {response.status}")
+        print("=== Stream test ===")
+        print(f"HTTP status:   {response.status}")
         print(
             "Content-Type: "
             + str(
                 response.headers.get(
                     "Content-Type",
-                    "fehlt",
+                    "missing",
                 )
             )
         )
