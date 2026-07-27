@@ -23,6 +23,7 @@ validate_environment()
 
 from bridge_common import (
     decode_resource_id,
+    navidrome_json,
     navidrome_url,
     signature_is_valid,
 )
@@ -715,6 +716,18 @@ class BridgeHandler(
             offset_in_milliseconds,
         )
 
+    def _verify_navidrome_request(
+        self,
+    ):
+        navidrome_json(
+            "ping"
+        )
+
+        return {
+            "status": "ok",
+            "service": "navidrome",
+        }
+
     def _resolve_request(
         self,
         payload,
@@ -883,6 +896,7 @@ class BridgeHandler(
             "/api/audiobookshelf/chapter",
             "/api/audiobookshelf/seek",
             "/api/audiobookshelf/progress",
+            "/api/navidrome/verify",
             "/api/navidrome/resolve",
             "/api/navidrome/current",
             "/api/navidrome/next",
@@ -948,6 +962,14 @@ class BridgeHandler(
                     self._abs_progress_request(
                         payload
                     )
+                )
+
+            elif (
+                path
+                == "/api/navidrome/verify"
+            ):
+                result = (
+                    self._verify_navidrome_request()
                 )
 
             elif (

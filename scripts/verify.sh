@@ -250,16 +250,9 @@ if health.get("status") != "ok":
 print("OK: Public HTTPS health endpoint is reachable.")
 
 
-verify_payload = {
-    "query":
-        "__alexa_media_bridge_verification__",
-    "mode":
-        "song",
-}
-
 status, _ = request(
-    "/api/navidrome/resolve",
-    payload=verify_payload,
+    "/api/navidrome/verify",
+    payload={},
 )
 
 if status != 401:
@@ -273,8 +266,8 @@ print("OK: Protected API rejects unauthenticated requests.")
 
 
 status, body = request(
-    "/api/navidrome/resolve",
-    payload=verify_payload,
+    "/api/navidrome/verify",
+    payload={},
     authorized=True,
 )
 
@@ -290,14 +283,26 @@ if status != 200:
     )
 
 try:
-    json.loads(body)
+    verification = json.loads(body)
 except json.JSONDecodeError as error:
     raise SystemExit(
         "Authenticated Navidrome endpoint "
         "returned invalid JSON."
     ) from error
 
-print("OK: Authenticated Navidrome API request succeeded.")
+if (
+    verification.get("status") != "ok"
+    or verification.get("service") != "navidrome"
+):
+    raise SystemExit(
+        "Authenticated Navidrome endpoint "
+        "returned an unexpected response."
+    )
+
+print(
+    "OK: Authenticated Navidrome connectivity "
+    "check succeeded."
+)
 PY
 
 pass "Public HTTPS, authentication, and Navidrome checks passed."
