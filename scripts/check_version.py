@@ -110,6 +110,16 @@ if not app_version_path.is_file():
         "bridge/app/app_version.py is missing."
     )
 
+dockerfile_path = root / "bridge" / "Dockerfile"
+dockerfile_source = dockerfile_path.read_text(
+    encoding="utf-8"
+)
+
+if "app/app_version.py" not in dockerfile_source:
+    errors.append(
+        "bridge/Dockerfile does not copy app/app_version.py."
+    )
+
 runtime_version_consumers = (
     root / "bridge" / "app" / "main.py",
     root / "bridge" / "app" / "abs_common.py",

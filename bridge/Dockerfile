@@ -19,6 +19,7 @@ COPY LICENSE /app/LICENSE
 
 COPY app/abs_bridge.py \
      app/abs_common.py \
+    app/app_version.py \
      app/bridge_common.py \
      app/config_validation.py \
      app/main.py \
