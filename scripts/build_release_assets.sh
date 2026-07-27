@@ -27,8 +27,8 @@ Usage:
   ./scripts/build_release_assets.sh [VERSION] [OUTPUT_DIRECTORY]
 
 Examples:
-  ./scripts/build_release_assets.sh 1.0.0
-  ./scripts/build_release_assets.sh v1.0.0 /tmp/release
+  ./scripts/build_release_assets.sh 1.2.3
+  ./scripts/build_release_assets.sh v1.2.3 /tmp/release
 
 Creates:
   - Flat AWS Lambda deployment ZIP

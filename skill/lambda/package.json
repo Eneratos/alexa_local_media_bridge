@@ -1,6 +1,6 @@
 {
   "name": "alexa_local_media_skill",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Alexa skill backend for Alexa Local Media Bridge",
   "main": "index.js",
