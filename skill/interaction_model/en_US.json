@@ -104,7 +104,6 @@
                         "play the audiobook {Query}",
                         "start the audiobook {Query}",
                         "listen to {Query}",
-                        "play episode {Query}",
                         "play the audio drama {Query}"
                     ]
                 },
@@ -201,21 +200,17 @@
                 {
                     "slots": [
                         {
-                            "name": "EpisodeNumber",
-                            "type": "AMAZON.NUMBER"
-                        },
-                        {
-                            "name": "Series",
-                            "type": "AudiobookSeries"
+                            "name": "Query",
+                            "type": "AMAZON.SearchQuery"
                         }
                     ],
                     "name": "PlayAudiobookSeriesEpisodeIntent",
                     "samples": [
-                        "play episode {EpisodeNumber} of {Series}",
-                        "start episode {EpisodeNumber} of {Series}",
-                        "play episode {EpisodeNumber} from {Series}",
-                        "start episode {EpisodeNumber} from {Series}",
-                        "play book {EpisodeNumber} of {Series}"
+                        "play episode {Query}",
+                        "start episode {Query}",
+                        "play audiobook episode {Query}",
+                        "start audiobook episode {Query}",
+                        "play audio drama episode {Query}"
                     ]
                 },
                 {
@@ -302,60 +297,6 @@
                 {
                     "name": "AMAZON.NavigateHomeIntent",
                     "samples": []
-                }
-            ],
-            "types": [
-                {
-                    "name": "AudiobookSeries",
-                    "values": [
-                        {
-                            "name": {
-                                "value": "Benjamin Blümchen",
-                                "synonyms": [
-                                    "Benjamin",
-                                    "Benjamin Bluemchen"
-                                ]
-                            }
-                        },
-                        {
-                            "name": {
-                                "value": "Meine Freundin Conni",
-                                "synonyms": [
-                                    "Conni",
-                                    "My Friend Conni"
-                                ]
-                            }
-                        },
-                        {
-                            "name": {
-                                "value": "Leo Lausemaus",
-                                "synonyms": [
-                                    "Leo",
-                                    "Leo Lausemaus"
-                                ]
-                            }
-                        },
-                        {
-                            "name": {
-                                "value": "Die Schule der magischen Tiere",
-                                "synonyms": [
-                                    "School of Magical Animals",
-                                    "The School of Magical Animals",
-                                    "Magical Animals"
-                                ]
-                            }
-                        },
-                        {
-                            "name": {
-                                "value": "Harry Potter - Gesprochen von Rufus Beck",
-                                "synonyms": [
-                                    "Harry Potter",
-                                    "Harry Potter by Rufus Beck",
-                                    "Harry Potter narrated by Rufus Beck"
-                                ]
-                            }
-                        }
-                    ]
                 }
             ],
             "invocationName": "media bridge"

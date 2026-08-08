@@ -267,6 +267,487 @@ function getResolvedSlotValue(
 }
 
 
+
+function canonicalEpisodeNumber(value) {
+    const text = String(
+        value || ''
+    ).trim().replace(',', '.');
+
+    if (!/^\d+(?:\.\d+)?$/.test(text)) {
+        return '';
+    }
+
+    const number = Number(text);
+
+    if (
+        !Number.isFinite(number)
+        || number <= 0
+    ) {
+        return '';
+    }
+
+    return String(number);
+}
+
+
+function parseGermanIntegerWords(value) {
+    const compact = String(
+        value || ''
+    )
+        .toLowerCase()
+        .replace(/[.\u00b7]/g, '')
+        .replace(/[\s-]+/g, '');
+
+    if (!compact) {
+        return null;
+    }
+
+    if (/^\d+$/.test(compact)) {
+        return Number(compact);
+    }
+
+    const small = {
+        null: 0,
+        ein: 1,
+        eins: 1,
+        eine: 1,
+        einen: 1,
+        zwei: 2,
+        drei: 3,
+        vier: 4,
+        fünf: 5,
+        funf: 5,
+        sechs: 6,
+        sieben: 7,
+        acht: 8,
+        neun: 9,
+        zehn: 10,
+        elf: 11,
+        zwölf: 12,
+        zwolf: 12,
+        dreizehn: 13,
+        vierzehn: 14,
+        fünfzehn: 15,
+        funfzehn: 15,
+        sechzehn: 16,
+        siebzehn: 17,
+        achtzehn: 18,
+        neunzehn: 19
+    };
+
+    if (
+        Object.prototype.hasOwnProperty.call(
+            small,
+            compact
+        )
+    ) {
+        return small[compact];
+    }
+
+    const thousandIndex =
+        compact.indexOf('tausend');
+
+    if (thousandIndex !== -1) {
+        const before =
+            compact.slice(0, thousandIndex);
+
+        const after =
+            compact.slice(
+                thousandIndex + 'tausend'.length
+            );
+
+        const multiplier =
+            before
+                ? parseGermanIntegerWords(before)
+                : 1;
+
+        const remainder =
+            after
+                ? parseGermanIntegerWords(after)
+                : 0;
+
+        if (
+            multiplier === null
+            || remainder === null
+        ) {
+            return null;
+        }
+
+        return multiplier * 1000 + remainder;
+    }
+
+    const hundredIndex =
+        compact.indexOf('hundert');
+
+    if (hundredIndex !== -1) {
+        const before =
+            compact.slice(0, hundredIndex);
+
+        const after =
+            compact.slice(
+                hundredIndex + 'hundert'.length
+            );
+
+        const multiplier =
+            before
+                ? parseGermanIntegerWords(before)
+                : 1;
+
+        const remainder =
+            after
+                ? parseGermanIntegerWords(after)
+                : 0;
+
+        if (
+            multiplier === null
+            || remainder === null
+            || multiplier < 1
+            || multiplier > 9
+        ) {
+            return null;
+        }
+
+        return multiplier * 100 + remainder;
+    }
+
+    const tens = [
+        ['zwanzig', 20],
+        ['dreißig', 30],
+        ['dreissig', 30],
+        ['vierzig', 40],
+        ['fünfzig', 50],
+        ['funfzig', 50],
+        ['sechzig', 60],
+        ['siebzig', 70],
+        ['achtzig', 80],
+        ['neunzig', 90]
+    ];
+
+    for (const pair of tens) {
+        const word = pair[0];
+        const number = pair[1];
+
+        if (compact === word) {
+            return number;
+        }
+
+        const suffix = 'und' + word;
+
+        if (compact.endsWith(suffix)) {
+            const unitWord =
+                compact.slice(
+                    0,
+                    compact.length - suffix.length
+                );
+
+            const unit =
+                parseGermanIntegerWords(unitWord);
+
+            if (
+                unit !== null
+                && unit >= 1
+                && unit <= 9
+            ) {
+                return number + unit;
+            }
+        }
+    }
+
+    return null;
+}
+
+
+function parseEnglishIntegerWords(value) {
+    const text = String(
+        value || ''
+    )
+        .toLowerCase()
+        .replace(/-/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    if (!text) {
+        return null;
+    }
+
+    if (/^\d+$/.test(text)) {
+        return Number(text);
+    }
+
+    const numbers = {
+        zero: 0,
+        one: 1,
+        two: 2,
+        three: 3,
+        four: 4,
+        five: 5,
+        six: 6,
+        seven: 7,
+        eight: 8,
+        nine: 9,
+        ten: 10,
+        eleven: 11,
+        twelve: 12,
+        thirteen: 13,
+        fourteen: 14,
+        fifteen: 15,
+        sixteen: 16,
+        seventeen: 17,
+        eighteen: 18,
+        nineteen: 19,
+        twenty: 20,
+        thirty: 30,
+        forty: 40,
+        fifty: 50,
+        sixty: 60,
+        seventy: 70,
+        eighty: 80,
+        ninety: 90
+    };
+
+    const words = text
+        .split(' ')
+        .filter(function (word) {
+            return word && word !== 'and';
+        });
+
+    let total = 0;
+    let current = 0;
+    let consumed = false;
+
+    for (const word of words) {
+        if (
+            Object.prototype.hasOwnProperty.call(
+                numbers,
+                word
+            )
+        ) {
+            current += numbers[word];
+            consumed = true;
+            continue;
+        }
+
+        if (word === 'hundred') {
+            current = (current || 1) * 100;
+            consumed = true;
+            continue;
+        }
+
+        if (word === 'thousand') {
+            total += (current || 1) * 1000;
+            current = 0;
+            consumed = true;
+            continue;
+        }
+
+        return null;
+    }
+
+    return consumed
+        ? total + current
+        : null;
+}
+
+
+function parseSpokenEpisodeNumber(
+    value,
+    language
+) {
+    const direct =
+        canonicalEpisodeNumber(value);
+
+    if (direct) {
+        return direct;
+    }
+
+    const text = String(
+        value || ''
+    )
+        .toLowerCase()
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    if (!text) {
+        return '';
+    }
+
+    const decimalSeparators =
+        language === 'en'
+            ? [' point ']
+            : [
+                ' komma ',
+                ' punkt ',
+                /*
+                 * The Alexa simulator can interpret
+                 * spoken decimal episode numbers such
+                 * as "2.1" as "zwei uhr eins".
+                 */
+                ' uhr '
+            ];
+
+    for (const separator of decimalSeparators) {
+        const index =
+            text.indexOf(separator);
+
+        if (index === -1) {
+            continue;
+        }
+
+        const left =
+            text.slice(0, index).trim();
+
+        const right =
+            text.slice(
+                index + separator.length
+            ).trim();
+
+        const integer =
+            language === 'en'
+                ? parseEnglishIntegerWords(left)
+                : parseGermanIntegerWords(left);
+
+        const fraction =
+            language === 'en'
+                ? parseEnglishIntegerWords(right)
+                : parseGermanIntegerWords(right);
+
+        if (
+            integer === null
+            || fraction === null
+            || integer < 0
+            || fraction < 0
+        ) {
+            return '';
+        }
+
+        return canonicalEpisodeNumber(
+            String(integer)
+            + '.'
+            + String(fraction)
+        );
+    }
+
+    const integer =
+        language === 'en'
+            ? parseEnglishIntegerWords(text)
+            : parseGermanIntegerWords(text);
+
+    if (
+        integer === null
+        || integer <= 0
+    ) {
+        return '';
+    }
+
+    return String(integer);
+}
+
+
+function parseAudiobookSeriesEpisodeQuery(
+    handlerInput,
+    value
+) {
+    let text = String(
+        value || ''
+    )
+        .trim()
+        .replace(/\s+/g, ' ')
+        .replace(/[.!?]+$/g, '');
+
+    if (!text) {
+        return null;
+    }
+
+    const language =
+        requestLanguage(handlerInput);
+
+    /*
+     * SearchQuery should normally contain only the
+     * text after "Folge"/"episode". These prefixes
+     * are accepted defensively in case Alexa includes
+     * one of them in the slot value.
+     */
+    if (language === 'en') {
+        text = text.replace(
+            /^(?:episode|book)\s+/i,
+            ''
+        );
+    } else {
+        text = text.replace(
+            /^(?:folge|hörspielfolge|hörspiel\s+folge)\s+/i,
+            ''
+        );
+    }
+
+    const connector =
+        language === 'en'
+            ? /^(.+?)\s+(?:of|from)\s+(.+)$/i
+            : /^(.+?)\s+(?:von|aus)\s+(.+)$/i;
+
+    const match = connector.exec(text);
+
+    if (match) {
+        const episodeNumber =
+            parseSpokenEpisodeNumber(
+                match[1],
+                language
+            );
+
+        const query =
+            match[2].trim();
+
+        if (
+            episodeNumber
+            && query
+        ) {
+            return {
+                episodeNumber: episodeNumber,
+                query: query
+            };
+        }
+    }
+
+    /*
+     * Also accept a request without "von"/"of",
+     * e.g. "42 Benjamin Blümchen". The longest
+     * valid number prefix wins.
+     */
+    const words = text.split(' ');
+
+    let result = null;
+
+    for (
+        let index = 1;
+        index < words.length;
+        index += 1
+    ) {
+        const numberText =
+            words.slice(0, index).join(' ');
+
+        const query =
+            words.slice(index).join(' ').trim();
+
+        const episodeNumber =
+            parseSpokenEpisodeNumber(
+                numberText,
+                language
+            );
+
+        if (
+            episodeNumber
+            && query
+        ) {
+            result = {
+                episodeNumber: episodeNumber,
+                query: query
+            };
+        }
+    }
+
+    return result;
+}
+
+
 function getModeForIntent(intentName) {
     if (intentName === 'PlayAlbumIntent') {
         return 'album';
@@ -2300,22 +2781,18 @@ const AudiobookSelectionIntentHandler = {
             intentName
             === 'PlayAudiobookSeriesEpisodeIntent'
         ) {
-            query = getResolvedSlotValue(
+            const spokenQuery = getSlotValue(
                 handlerInput,
-                'Series'
+                'Query'
             );
 
-            episodeNumber = getSlotValue(
-                handlerInput,
-                'EpisodeNumber'
-            );
+            const parsed =
+                parseAudiobookSeriesEpisodeQuery(
+                    handlerInput,
+                    spokenQuery
+                );
 
-            if (
-                !query
-                || !/^\d+(?:[.,]\d+)?$/.test(
-                    episodeNumber
-                )
-            ) {
+            if (!parsed) {
                 return handlerInput.responseBuilder
                     .speak(
                         localizedText(
@@ -2333,12 +2810,24 @@ const AudiobookSelectionIntentHandler = {
                                 + 'Spiele Folge zweiundvierzig '
                                 + 'von Benjamin Blümchen.',
                             'For example, say: '
-                                + 'Play episode three '
+                                + 'Play episode forty two '
                                 + 'of Harry Potter.'
                         )
                     )
                     .getResponse();
             }
+
+            query = parsed.query;
+            episodeNumber =
+                parsed.episodeNumber;
+
+            console.log(
+                'Parsed audiobook series episode query:',
+                spokenQuery,
+                '=>',
+                episodeNumber,
+                query
+            );
 
             payload.query = query;
             payload.episodeNumber =

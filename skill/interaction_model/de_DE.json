@@ -115,11 +115,9 @@
                         "starte das hörbuch {Query}",
                         "spiele mir das hörbuch {Query}",
                         "höre {Query}",
-                        "spiele die folge {Query}",
                         "spiele das hörspiel {Query}",
                         "starte das hörspiel {Query}",
-                        "höre das hörspiel {Query}",
-                        "spiele die hörspielfolge {Query}"
+                        "höre das hörspiel {Query}"
                     ]
                 },
                 {
@@ -226,22 +224,19 @@
                 {
                     "slots": [
                         {
-                            "name": "EpisodeNumber",
-                            "type": "AMAZON.NUMBER"
-                        },
-                        {
-                            "name": "Series",
-                            "type": "AudiobookSeries"
+                            "name": "Query",
+                            "type": "AMAZON.SearchQuery"
                         }
                     ],
                     "name": "PlayAudiobookSeriesEpisodeIntent",
                     "samples": [
-                        "spiele folge {EpisodeNumber} von {Series}",
-                        "spiel folge {EpisodeNumber} von {Series}",
-                        "starte folge {EpisodeNumber} von {Series}",
-                        "spiele die folge {EpisodeNumber} von {Series}",
-                        "starte die folge {EpisodeNumber} von {Series}",
-                        "spiele hörspielfolge {EpisodeNumber} von {Series}"
+                        "spiele folge {Query}",
+                        "spiel folge {Query}",
+                        "starte folge {Query}",
+                        "spiele die folge {Query}",
+                        "starte die folge {Query}",
+                        "spiele hörspielfolge {Query}",
+                        "spiele hörspiel folge {Query}"
                     ]
                 },
                 {
@@ -331,59 +326,6 @@
                 {
                     "name": "AMAZON.NavigateHomeIntent",
                     "samples": []
-                }
-            ],
-            "types": [
-                {
-                    "name": "AudiobookSeries",
-                    "values": [
-                        {
-                            "name": {
-                                "value": "Benjamin Blümchen",
-                                "synonyms": [
-                                    "Benjamin",
-                                    "Benjamin Blümchen Hörspiele"
-                                ]
-                            }
-                        },
-                        {
-                            "name": {
-                                "value": "Meine Freundin Conni",
-                                "synonyms": [
-                                    "Conni",
-                                    "Meine Freundin Conni"
-                                ]
-                            }
-                        },
-                        {
-                            "name": {
-                                "value": "Leo Lausemaus",
-                                "synonyms": [
-                                    "Leo",
-                                    "Leo Lausemaus Hörspiele"
-                                ]
-                            }
-                        },
-                        {
-                            "name": {
-                                "value": "Die Schule der magischen Tiere",
-                                "synonyms": [
-                                    "Schule der magischen Tiere",
-                                    "Magische Tiere"
-                                ]
-                            }
-                        },
-                        {
-                            "name": {
-                                "value": "Harry Potter - Gesprochen von Rufus Beck",
-                                "synonyms": [
-                                    "Harry Potter",
-                                    "Harry Potter Rufus Beck",
-                                    "Harry Potter gesprochen von Rufus Beck"
-                                ]
-                            }
-                        }
-                    ]
                 }
             ],
             "invocationName": "medienbrücke"
