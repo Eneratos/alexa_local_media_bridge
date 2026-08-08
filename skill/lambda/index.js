@@ -2404,7 +2404,7 @@ function parseMisroutedRandomUnheardAudiobookQuery(
                 /^(?:an?\s+)?(?:random\s+)?unheard\s+audiobook\s+(?:of|from)\s+(.+)$/i
             ]
             : [
-                /^(?:eine\s+)?(?:zufällige\s+)?(?:ungehörte|ungerade|unbeugsame)\s+folge\s+von\s+(.+)$/i,
+                /^(?:eine\s+)?(?:zufällige\s+)?(?:ungg?ehörte|ungerade|unbeugsame)\s+folge\s+von\s+(.+)$/i,
                 /^(?:ein\s+)?(?:zufälliges\s+)?ungehörtes\s+hörspiel\s+von\s+(.+)$/i
             ];
 
