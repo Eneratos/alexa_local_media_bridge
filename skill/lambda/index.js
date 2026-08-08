@@ -2378,6 +2378,53 @@ const PlayAudiobookIntentHandler = {
     }
 };
 
+
+function parseMisroutedRandomUnheardAudiobookQuery(
+    handlerInput,
+    value
+) {
+    const text = String(
+        value || ''
+    )
+        .trim()
+        .replace(/\s+/g, ' ')
+        .replace(/[.!?]+$/g, '');
+
+    if (!text) {
+        return '';
+    }
+
+    const language =
+        requestLanguage(handlerInput);
+
+    const patterns =
+        language === 'en'
+            ? [
+                /^(?:an?\s+)?(?:random\s+)?unheard\s+episode\s+(?:of|from)\s+(.+)$/i,
+                /^(?:an?\s+)?(?:random\s+)?unheard\s+audiobook\s+(?:of|from)\s+(.+)$/i
+            ]
+            : [
+                /^(?:eine\s+)?(?:zufällige\s+)?ungehörte\s+folge\s+von\s+(.+)$/i,
+                /^(?:ein\s+)?(?:zufälliges\s+)?ungehörtes\s+hörspiel\s+von\s+(.+)$/i
+            ];
+
+    for (const pattern of patterns) {
+        const match =
+            pattern.exec(text);
+
+        if (
+            match
+            && match[1]
+            && match[1].trim()
+        ) {
+            return match[1].trim();
+        }
+    }
+
+    return '';
+}
+
+
 const PlayMediaIntentHandler = {
     canHandle(handlerInput) {
         if (
@@ -2419,6 +2466,141 @@ const PlayMediaIntentHandler = {
                 handlerInput,
                 'Query'
             );
+        }
+
+        /*
+         * Real Alexa devices can occasionally route
+         * an unheard-audiobook request to the broad
+         * PlaySongIntent. Catch that phrase before
+         * it reaches Navidrome and reroute it to
+         * Audiobookshelf.
+         */
+        const misroutedUnheardQuery =
+            mode !== 'random'
+                ? parseMisroutedRandomUnheardAudiobookQuery(
+                    handlerInput,
+                    query
+                )
+                : '';
+
+        if (misroutedUnheardQuery) {
+            console.log(
+                'Rerouting media intent to '
+                    + 'random unheard audiobook:',
+                intentName,
+                query,
+                '=>',
+                misroutedUnheardQuery
+            );
+
+            let audiobookResult;
+
+            try {
+                audiobookResult = await postJson(
+                    AUDIOBOOK_RESOLVE_API_URL,
+                    {
+                        query:
+                            misroutedUnheardQuery,
+                        randomUnheardSeries: true
+                    }
+                );
+            } catch (error) {
+                console.error(
+                    'Rerouted audiobook resolver error:',
+                    error && error.stack
+                        ? error.stack
+                        : String(error)
+                );
+
+                return handlerInput.responseBuilder
+                    .speak(
+                        localizedText(
+                            handlerInput,
+                            'Ich konnte das gewünschte '
+                                + 'Hörbuch gerade nicht starten.',
+                            'I could not start the requested '
+                                + 'audiobook right now.'
+                        )
+                    )
+                    .withShouldEndSession(true)
+                    .getResponse();
+            }
+
+            if (
+                !resultIsPlayable(
+                    audiobookResult
+                )
+            ) {
+                console.error(
+                    'Invalid rerouted audiobook response:',
+                    JSON.stringify(
+                        audiobookResult
+                    )
+                );
+
+                return handlerInput.responseBuilder
+                    .speak(
+                        localizedText(
+                            handlerInput,
+                            'Ich habe keine passende '
+                                + 'ungehörte Folge gefunden.',
+                            'I could not find a matching '
+                                + 'unheard episode.'
+                        )
+                    )
+                    .withShouldEndSession(true)
+                    .getResponse();
+            }
+
+            const audiobookMatch =
+                audiobookResult.match || {};
+
+            const audiobookSelection =
+                audiobookResult.selection || {};
+
+            const seriesName =
+                audiobookSelection.seriesName
+                || misroutedUnheardQuery;
+
+            const title =
+                audiobookMatch.title
+                || '';
+
+            let speech =
+                localizedText(
+                    handlerInput,
+                    'Ich habe zufällig eine ungehörte '
+                        + 'Folge von '
+                        + seriesName
+                        + ' ausgewählt',
+                    'I randomly selected an unheard '
+                        + 'episode of '
+                        + seriesName
+                );
+
+            if (title) {
+                speech +=
+                    localizedText(
+                        handlerInput,
+                        ': ' + title,
+                        ': ' + title
+                    );
+            }
+
+            speech += '.';
+
+            return handlerInput.responseBuilder
+                .speak(speech)
+                .addDirective(
+                    createPlayDirective(
+                        audiobookResult,
+                        'REPLACE_ALL',
+                        '',
+                        0
+                    )
+                )
+                .withShouldEndSession(true)
+                .getResponse();
         }
 
         if (
