@@ -43,6 +43,9 @@ const AUDIOBOOK_CHAPTER_API_URL =
 const AUDIOBOOK_SEEK_API_URL =
     `${BRIDGE_BASE_URL}/api/audiobookshelf/seek`;
 
+const AUDIOBOOK_SERIES_NEIGHBOR_API_URL =
+    `${BRIDGE_BASE_URL}/api/audiobookshelf/series-neighbor`;
+
 const CONTROL_SECRET =
     String(
         process.env.CONTROL_SECRET || ''
@@ -205,6 +208,62 @@ function getSlotValue(handlerInput, slotName) {
     }
 
     return slot.value.trim();
+}
+
+
+
+function getResolvedSlotValue(
+    handlerInput,
+    slotName
+) {
+    const request =
+        handlerInput.requestEnvelope.request || {};
+
+    const intent =
+        request.intent || {};
+
+    const slots =
+        intent.slots || {};
+
+    const slot =
+        slots[slotName] || {};
+
+    const resolutions =
+        slot.resolutions
+        && slot.resolutions.resolutionsPerAuthority;
+
+    if (Array.isArray(resolutions)) {
+        for (const authority of resolutions) {
+            if (
+                !authority
+                || !authority.status
+                || authority.status.code
+                    !== 'ER_SUCCESS_MATCH'
+                || !Array.isArray(
+                    authority.values
+                )
+            ) {
+                continue;
+            }
+
+            const first =
+                authority.values[0]
+                && authority.values[0].value;
+
+            if (
+                first
+                && typeof first.name === 'string'
+                && first.name.trim()
+            ) {
+                return first.name.trim();
+            }
+        }
+    }
+
+    return getSlotValue(
+        handlerInput,
+        slotName
+    );
 }
 
 
@@ -1523,7 +1582,8 @@ const PlayAudiobookIntentHandler = {
 
         return [
             'PlayAudiobookIntent',
-            'PlayAudiobookFromStartIntent'
+            'PlayAudiobookFromStartIntent',
+            'PlayRandomAudiobookIntent'
         ].indexOf(intentName) !== -1;
     },
 
@@ -1532,6 +1592,10 @@ const PlayAudiobookIntentHandler = {
             Alexa.getIntentName(
                 handlerInput.requestEnvelope
             );
+
+        const randomSeries =
+            intentName
+            === 'PlayRandomAudiobookIntent';
 
         const fromStart =
             intentName
@@ -1543,6 +1607,34 @@ const PlayAudiobookIntentHandler = {
         );
 
         let result;
+
+        if (
+            randomSeries
+            && !query
+        ) {
+            return handlerInput.responseBuilder
+                .speak(
+                    localizedText(
+                        handlerInput,
+                        'Von welcher Hörspielserie möchtest '
+                            + 'du eine zufällige Folge hören?',
+                        'Which audiobook series would you like '
+                            + 'a random audiobook from?'
+                    )
+                )
+                .reprompt(
+                    localizedText(
+                        handlerInput,
+                        'Sage zum Beispiel: Spiele ein '
+                            + 'zufälliges Hörspiel von '
+                            + 'Benjamin Blümchen.',
+                        'For example, say: Play a random '
+                            + 'audiobook from Harry Potter.'
+                    )
+                )
+                .getResponse();
+        }
+
 
         if (
             fromStart
@@ -1636,9 +1728,11 @@ const PlayAudiobookIntentHandler = {
             }
 
             console.log(
-                fromStart
-                    ? 'Audiobookshelf search from the beginning:'
-                    : 'Audiobookshelf search:',
+                randomSeries
+                    ? 'Audiobookshelf random series search:'
+                    : fromStart
+                        ? 'Audiobookshelf search from the beginning:'
+                        : 'Audiobookshelf search:',
                 query
             );
 
@@ -1647,7 +1741,8 @@ const PlayAudiobookIntentHandler = {
                     AUDIOBOOK_RESOLVE_API_URL,
                     {
                         query: query,
-                        fromStart: fromStart
+                        fromStart: fromStart,
+                        randomSeries: randomSeries
                     }
                 );
             } catch (error) {
@@ -1992,6 +2087,510 @@ const ResumeIntentHandler = {
     async handle(handlerInput) {
         return resumePlayback(
             handlerInput,
+            true
+        );
+    }
+};
+
+
+
+async function changeAudiobookSeriesEpisode(
+    handlerInput,
+    direction,
+    spokenRequest
+) {
+    const state = getAudioPlayerState(
+        handlerInput
+    );
+
+    if (!isAudiobookToken(state.token)) {
+        if (spokenRequest) {
+            return handlerInput.responseBuilder
+                .speak(
+                    localizedText(
+                        handlerInput,
+                        'Es läuft kein Hörbuch.',
+                        'No audiobook is currently playing.'
+                    )
+                )
+                .withShouldEndSession(true)
+                .getResponse();
+        }
+
+        return handlerInput.responseBuilder
+            .getResponse();
+    }
+
+    let result;
+
+    try {
+        result = await postJson(
+            AUDIOBOOK_SERIES_NEIGHBOR_API_URL,
+            {
+                token: state.token,
+                direction: direction,
+                offsetInMilliseconds:
+                    state.offsetInMilliseconds
+            }
+        );
+    } catch (error) {
+        console.error(
+            'Audiobook series change error:',
+            direction,
+            error && error.stack
+                ? error.stack
+                : String(error)
+        );
+
+        return handlerInput.responseBuilder
+            .speak(
+                localizedText(
+                    handlerInput,
+                    'Ich konnte die Folge gerade '
+                        + 'nicht wechseln.',
+                    'I could not change the episode '
+                        + 'right now.'
+                )
+            )
+            .withShouldEndSession(true)
+            .getResponse();
+    }
+
+    if (
+        result
+        && result.status === 'end'
+    ) {
+        const atEnd =
+            direction === 'next';
+
+        return handlerInput.responseBuilder
+            .speak(
+                localizedText(
+                    handlerInput,
+                    atEnd
+                        ? 'Das ist bereits die letzte '
+                            + 'Folge der Serie.'
+                        : 'Das ist bereits die erste '
+                            + 'Folge der Serie.',
+                    atEnd
+                        ? 'This is already the last '
+                            + 'episode in the series.'
+                        : 'This is already the first '
+                            + 'episode in the series.'
+                )
+            )
+            .withShouldEndSession(true)
+            .getResponse();
+    }
+
+    if (!resultIsPlayable(result)) {
+        console.error(
+            'Invalid audiobook series response:',
+            JSON.stringify(result)
+        );
+
+        return handlerInput.responseBuilder
+            .speak(
+                localizedText(
+                    handlerInput,
+                    'Ich konnte die Folge gerade '
+                        + 'nicht wechseln.',
+                    'I could not change the episode '
+                        + 'right now.'
+                )
+            )
+            .withShouldEndSession(true)
+            .getResponse();
+    }
+
+    const match =
+        result.match || {};
+
+    const selection =
+        result.selection || {};
+
+    let speech;
+
+    if (direction === 'next') {
+        speech = localizedText(
+            handlerInput,
+            'Ich spiele die nächste Folge',
+            'I am playing the next episode'
+        );
+    } else {
+        speech = localizedText(
+            handlerInput,
+            'Ich spiele die vorherige Folge',
+            'I am playing the previous episode'
+        );
+    }
+
+    if (selection.sequence) {
+        speech += localizedText(
+            handlerInput,
+            ', Folge ',
+            ', episode '
+        ) + selection.sequence;
+    }
+
+    if (match.title) {
+        speech += ', ' + match.title;
+    }
+
+    speech += '.';
+
+    console.log(
+        'Starting audiobook series neighbor:',
+        direction,
+        selection.seriesName || '',
+        selection.sequence || '',
+        match.title || ''
+    );
+
+    return handlerInput.responseBuilder
+        .speak(speech)
+        .addDirective(
+            createPlayDirective(
+                result,
+                'REPLACE_ALL',
+                '',
+                0
+            )
+        )
+        .withShouldEndSession(true)
+        .getResponse();
+}
+
+
+const AudiobookSelectionIntentHandler = {
+    canHandle(handlerInput) {
+        if (
+            Alexa.getRequestType(
+                handlerInput.requestEnvelope
+            ) !== 'IntentRequest'
+        ) {
+            return false;
+        }
+
+        const intentName =
+            Alexa.getIntentName(
+                handlerInput.requestEnvelope
+            );
+
+        return [
+            'PlayAudiobookSeriesEpisodeIntent',
+            'PlayRandomLibraryAudiobookIntent',
+            'PlayRandomUnheardAudiobookIntent'
+        ].indexOf(intentName) !== -1;
+    },
+
+    async handle(handlerInput) {
+        const intentName =
+            Alexa.getIntentName(
+                handlerInput.requestEnvelope
+            );
+
+        const payload = {};
+
+        let query = '';
+        let episodeNumber = '';
+        let forceFromStart = false;
+
+        if (
+            intentName
+            === 'PlayAudiobookSeriesEpisodeIntent'
+        ) {
+            query = getResolvedSlotValue(
+                handlerInput,
+                'Series'
+            );
+
+            episodeNumber = getSlotValue(
+                handlerInput,
+                'EpisodeNumber'
+            );
+
+            if (
+                !query
+                || !/^\d+(?:[.,]\d+)?$/.test(
+                    episodeNumber
+                )
+            ) {
+                return handlerInput.responseBuilder
+                    .speak(
+                        localizedText(
+                            handlerInput,
+                            'Welche Folge aus welcher Serie '
+                                + 'möchtest du hören?',
+                            'Which episode from which series '
+                                + 'would you like to hear?'
+                        )
+                    )
+                    .reprompt(
+                        localizedText(
+                            handlerInput,
+                            'Sage zum Beispiel: '
+                                + 'Spiele Folge zweiundvierzig '
+                                + 'von Benjamin Blümchen.',
+                            'For example, say: '
+                                + 'Play episode three '
+                                + 'of Harry Potter.'
+                        )
+                    )
+                    .getResponse();
+            }
+
+            payload.query = query;
+            payload.episodeNumber =
+                episodeNumber;
+        } else if (
+            intentName
+            === 'PlayRandomLibraryAudiobookIntent'
+        ) {
+            payload.randomLibrary = true;
+            forceFromStart = true;
+        } else {
+            query = getSlotValue(
+                handlerInput,
+                'Query'
+            );
+
+            if (!query) {
+                return handlerInput.responseBuilder
+                    .speak(
+                        localizedText(
+                            handlerInput,
+                            'Von welcher Hörspielserie '
+                                + 'möchtest du eine '
+                                + 'ungehörte Folge hören?',
+                            'Which audiobook series '
+                                + 'would you like an '
+                                + 'unheard episode from?'
+                        )
+                    )
+                    .reprompt(
+                        localizedText(
+                            handlerInput,
+                            'Sage zum Beispiel: '
+                                + 'Spiele eine ungehörte Folge '
+                                + 'von Benjamin Blümchen.',
+                            'For example, say: '
+                                + 'Play an unheard episode '
+                                + 'of Harry Potter.'
+                        )
+                    )
+                    .getResponse();
+            }
+
+            payload.query = query;
+            payload.randomUnheardSeries = true;
+            forceFromStart = true;
+        }
+
+        let result;
+
+        try {
+            result = await postJson(
+                AUDIOBOOK_RESOLVE_API_URL,
+                payload
+            );
+        } catch (error) {
+            console.error(
+                'Audiobook selection error:',
+                intentName,
+                error && error.stack
+                    ? error.stack
+                    : String(error)
+            );
+
+            return handlerInput.responseBuilder
+                .speak(
+                    localizedText(
+                        handlerInput,
+                        'Ich konnte das gewünschte '
+                            + 'Hörbuch gerade nicht starten.',
+                        'I could not start the requested '
+                            + 'audiobook right now.'
+                    )
+                )
+                .withShouldEndSession(true)
+                .getResponse();
+        }
+
+        if (!resultIsPlayable(result)) {
+            console.error(
+                'Invalid audiobook selection response:',
+                JSON.stringify(result)
+            );
+
+            return handlerInput.responseBuilder
+                .speak(
+                    localizedText(
+                        handlerInput,
+                        'Ich habe kein passendes '
+                            + 'Hörbuch gefunden.',
+                        'I could not find a matching '
+                            + 'audiobook.'
+                    )
+                )
+                .withShouldEndSession(true)
+                .getResponse();
+        }
+
+        const match =
+            result.match || {};
+
+        const playback =
+            result.playback || {};
+
+        const selection =
+            result.selection || {};
+
+        let offset = Number(
+            playback.offsetInMilliseconds || 0
+        );
+
+        if (
+            !Number.isFinite(offset)
+            || offset < 0
+            || forceFromStart
+        ) {
+            offset = 0;
+        }
+
+        offset = Math.floor(offset);
+
+        const title =
+            match.title
+            || query
+            || '';
+
+        let speech;
+
+        if (
+            intentName
+            === 'PlayAudiobookSeriesEpisodeIntent'
+        ) {
+            const sequence =
+                selection.sequence
+                || episodeNumber;
+
+            const seriesName =
+                selection.seriesName
+                || query;
+
+            speech = localizedText(
+                handlerInput,
+                'Ich spiele Folge '
+                    + sequence
+                    + ' von '
+                    + seriesName,
+                'I am playing episode '
+                    + sequence
+                    + ' of '
+                    + seriesName
+            );
+
+            if (title) {
+                speech += ', ' + title;
+            }
+
+            speech += '.';
+        } else if (
+            intentName
+            === 'PlayRandomLibraryAudiobookIntent'
+        ) {
+            speech = localizedText(
+                handlerInput,
+                'Ich habe zufällig '
+                    + title
+                    + ' ausgewählt.',
+                'I randomly selected '
+                    + title
+                    + '.'
+            );
+        } else {
+            const seriesName =
+                selection.seriesName
+                || query;
+
+            speech = localizedText(
+                handlerInput,
+                'Ich habe zufällig eine '
+                    + 'ungehörte Folge von '
+                    + seriesName
+                    + ' ausgewählt: '
+                    + title
+                    + '.',
+                'I randomly selected an '
+                    + 'unheard episode of '
+                    + seriesName
+                    + ': '
+                    + title
+                    + '.'
+            );
+        }
+
+        console.log(
+            'Starting audiobook selection:',
+            intentName,
+            selection.seriesName || '',
+            selection.sequence || '',
+            match.title || '',
+            'at',
+            offset,
+            'milliseconds'
+        );
+
+        return handlerInput.responseBuilder
+            .speak(speech)
+            .addDirective(
+                createPlayDirective(
+                    result,
+                    'REPLACE_ALL',
+                    '',
+                    offset
+                )
+            )
+            .withShouldEndSession(true)
+            .getResponse();
+    }
+};
+
+
+const AudiobookSeriesNeighborIntentHandler = {
+    canHandle(handlerInput) {
+        if (
+            Alexa.getRequestType(
+                handlerInput.requestEnvelope
+            ) !== 'IntentRequest'
+        ) {
+            return false;
+        }
+
+        const intentName =
+            Alexa.getIntentName(
+                handlerInput.requestEnvelope
+            );
+
+        return [
+            'NextAudiobookEpisodeIntent',
+            'PreviousAudiobookEpisodeIntent'
+        ].indexOf(intentName) !== -1;
+    },
+
+    async handle(handlerInput) {
+        const intentName =
+            Alexa.getIntentName(
+                handlerInput.requestEnvelope
+            );
+
+        return changeAudiobookSeriesEpisode(
+            handlerInput,
+            intentName
+                === 'NextAudiobookEpisodeIntent'
+                ? 'next'
+                : 'previous',
             true
         );
     }
@@ -2741,6 +3340,8 @@ const skill = Alexa.SkillBuilders
         PlaybackControllerPreviousHandler,
         LaunchRequestHandler,
         PlayAudiobookIntentHandler,
+        AudiobookSelectionIntentHandler,
+        AudiobookSeriesNeighborIntentHandler,
         AudiobookTimeSeekIntentHandler,
         AudiobookChapterNumberIntentHandler,
         NextAudiobookChapterIntentHandler,

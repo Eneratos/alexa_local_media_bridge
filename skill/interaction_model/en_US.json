@@ -81,6 +81,24 @@
                             "type": "AMAZON.SearchQuery"
                         }
                     ],
+                    "name": "PlayRandomAudiobookIntent",
+                    "samples": [
+                        "play a random audiobook from {Query}",
+                        "start a random audiobook from {Query}",
+                        "play a random audiobook from the series {Query}",
+                        "start a random audiobook from the series {Query}",
+                        "play a random episode of {Query}",
+                        "start a random episode of {Query}",
+                        "play a random audio drama from {Query}"
+                    ]
+                },
+                {
+                    "slots": [
+                        {
+                            "name": "Query",
+                            "type": "AMAZON.SearchQuery"
+                        }
+                    ],
                     "name": "PlayAudiobookIntent",
                     "samples": [
                         "play the audiobook {Query}",
@@ -181,6 +199,75 @@
                     ]
                 },
                 {
+                    "slots": [
+                        {
+                            "name": "EpisodeNumber",
+                            "type": "AMAZON.NUMBER"
+                        },
+                        {
+                            "name": "Series",
+                            "type": "AudiobookSeries"
+                        }
+                    ],
+                    "name": "PlayAudiobookSeriesEpisodeIntent",
+                    "samples": [
+                        "play episode {EpisodeNumber} of {Series}",
+                        "start episode {EpisodeNumber} of {Series}",
+                        "play episode {EpisodeNumber} from {Series}",
+                        "start episode {EpisodeNumber} from {Series}",
+                        "play book {EpisodeNumber} of {Series}"
+                    ]
+                },
+                {
+                    "slots": [],
+                    "name": "PlayRandomLibraryAudiobookIntent",
+                    "samples": [
+                        "play a random audiobook",
+                        "start a random audiobook",
+                        "play any audiobook",
+                        "play a random audio drama",
+                        "play any audio drama"
+                    ]
+                },
+                {
+                    "slots": [
+                        {
+                            "name": "Query",
+                            "type": "AMAZON.SearchQuery"
+                        }
+                    ],
+                    "name": "PlayRandomUnheardAudiobookIntent",
+                    "samples": [
+                        "play a random unheard episode of {Query}",
+                        "start a random unheard episode of {Query}",
+                        "play an unheard episode of {Query}",
+                        "play a random unheard audiobook from {Query}",
+                        "play an unheard audiobook from {Query}"
+                    ]
+                },
+                {
+                    "slots": [],
+                    "name": "NextAudiobookEpisodeIntent",
+                    "samples": [
+                        "next episode",
+                        "play the next episode",
+                        "start the next episode",
+                        "continue with the next episode",
+                        "next audiobook episode"
+                    ]
+                },
+                {
+                    "slots": [],
+                    "name": "PreviousAudiobookEpisodeIntent",
+                    "samples": [
+                        "previous episode",
+                        "play the previous episode",
+                        "start the previous episode",
+                        "go back one episode",
+                        "previous audiobook episode"
+                    ]
+                },
+                {
                     "name": "AMAZON.HelpIntent",
                     "samples": []
                 },
@@ -217,7 +304,60 @@
                     "samples": []
                 }
             ],
-            "types": [],
+            "types": [
+                {
+                    "name": "AudiobookSeries",
+                    "values": [
+                        {
+                            "name": {
+                                "value": "Benjamin Blümchen",
+                                "synonyms": [
+                                    "Benjamin",
+                                    "Benjamin Bluemchen"
+                                ]
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "Meine Freundin Conni",
+                                "synonyms": [
+                                    "Conni",
+                                    "My Friend Conni"
+                                ]
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "Leo Lausemaus",
+                                "synonyms": [
+                                    "Leo",
+                                    "Leo Lausemaus"
+                                ]
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "Die Schule der magischen Tiere",
+                                "synonyms": [
+                                    "School of Magical Animals",
+                                    "The School of Magical Animals",
+                                    "Magical Animals"
+                                ]
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "Harry Potter - Gesprochen von Rufus Beck",
+                                "synonyms": [
+                                    "Harry Potter",
+                                    "Harry Potter by Rufus Beck",
+                                    "Harry Potter narrated by Rufus Beck"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ],
             "invocationName": "media bridge"
         }
     }

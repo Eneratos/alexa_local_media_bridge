@@ -7,7 +7,9 @@ import json
 import math
 import os
 import re
+import secrets
 import time
+from decimal import Decimal, InvalidOperation
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -472,6 +474,722 @@ def _select_search_result(
         )
 
     return candidates[0][2]
+
+
+
+def _series_score(
+    series_name,
+    query,
+):
+    series_folded = _fold(
+        series_name
+    )
+    query_folded = _fold(
+        query
+    )
+
+    query_words = set(
+        query_folded.split()
+    )
+    series_words = set(
+        series_folded.split()
+    )
+
+    score = 0
+
+    if series_folded == query_folded:
+        score += 1000
+
+    if query_folded in series_folded:
+        score += 500
+
+    if series_folded in query_folded:
+        score += 250
+
+    score += 25 * len(
+        query_words
+        & series_words
+    )
+
+    return score
+
+
+def _select_series(
+    query,
+):
+    if not AUDIOBOOKSHELF_LIBRARY_ID:
+        raise RuntimeError(
+            "AUDIOBOOKSHELF_LIBRARY_ID is not configured."
+        )
+
+    response = abs_json(
+        "/api/libraries/"
+        + AUDIOBOOKSHELF_LIBRARY_ID
+        + "/filterdata"
+    )
+
+    candidates = []
+
+    for series in (
+        response.get("series")
+        or []
+    ):
+        series_id = _text(
+            series.get("id")
+        )
+        series_name = _text(
+            series.get("name")
+        )
+
+        if (
+            not series_id
+            or not series_name
+        ):
+            continue
+
+        score = _series_score(
+            series_name,
+            query,
+        )
+
+        if score <= 0:
+            continue
+
+        candidates.append(
+            (
+                score,
+                series_name,
+                series_id,
+            )
+        )
+
+    candidates.sort(
+        key=lambda entry: (
+            -entry[0],
+            entry[1].casefold(),
+            entry[2],
+        )
+    )
+
+    if not candidates:
+        raise LookupError(
+            "No matching audiobook series found."
+        )
+
+    return candidates[0]
+
+
+def resolve_random_audiobook(
+    query,
+):
+    query = _text(
+        query
+    )
+
+    if (
+        not query
+        or len(query) > 200
+    ):
+        raise ValueError(
+            "Invalid audiobook series query."
+        )
+
+    (
+        _score,
+        series_name,
+        series_id,
+    ) = _select_series(
+        query
+    )
+
+    series = abs_json(
+        "/api/series/"
+        + urllib.parse.quote(
+            series_id,
+            safe="",
+        ),
+        query={
+            "include": "progress",
+        },
+    )
+
+    progress = (
+        series.get("progress")
+        or {}
+    )
+
+    item_ids = [
+        _text(item_id)
+        for item_id in (
+            progress.get(
+                "libraryItemIds"
+            )
+            or []
+        )
+        if _text(item_id)
+    ]
+
+    if not item_ids:
+        raise LookupError(
+            "The audiobook series contains no books."
+        )
+
+    item_id = secrets.choice(
+        item_ids
+    )
+
+    result = resolve_audiobook(
+        item_id=item_id,
+        from_start=True,
+    )
+
+    result["selection"] = {
+        "mode": "randomSeries",
+        "seriesId": series_id,
+        "seriesName": series_name,
+        "candidateCount":
+            len(item_ids),
+    }
+
+    return result
+
+
+
+def _normalize_series_sequence(
+    value,
+):
+    text = _text(
+        value
+    ).replace(
+        ",",
+        ".",
+    )
+
+    if not text:
+        return ""
+
+    try:
+        number = Decimal(
+            text
+        )
+    except InvalidOperation:
+        return text.casefold()
+
+    if not number.is_finite():
+        return text.casefold()
+
+    normalized = format(
+        number.normalize(),
+        "f",
+    )
+
+    if "." in normalized:
+        normalized = (
+            normalized.rstrip("0")
+            .rstrip(".")
+        )
+
+    return normalized
+
+
+def _series_sequence_from_item(
+    item,
+):
+    metadata = (
+        (item.get("media") or {})
+        .get("metadata")
+        or {}
+    )
+
+    for entry in _series_payload(
+        metadata
+    ):
+        sequence = _text(
+            entry.get("sequence")
+        )
+
+        if sequence:
+            return sequence
+
+    return _text(
+        item.get("seriesSequence")
+    )
+
+
+def _series_filter(
+    series_id,
+):
+    encoded = base64.b64encode(
+        _text(series_id).encode(
+            "utf-8"
+        )
+    ).decode(
+        "ascii"
+    )
+
+    return (
+        "series."
+        + encoded
+    )
+
+
+def _series_items(
+    series_id,
+):
+    if not AUDIOBOOKSHELF_LIBRARY_ID:
+        raise RuntimeError(
+            "AUDIOBOOKSHELF_LIBRARY_ID is not configured."
+        )
+
+    response = abs_json(
+        "/api/libraries/"
+        + AUDIOBOOKSHELF_LIBRARY_ID
+        + "/items",
+        query={
+            "filter":
+                _series_filter(
+                    series_id
+                ),
+            "sort": "sequence",
+            "desc": 0,
+            "limit": 0,
+            "minified": 0,
+        },
+    )
+
+    return [
+        item
+        for item in (
+            response.get("results")
+            or []
+        )
+        if _text(
+            item.get("id")
+        )
+    ]
+
+
+def resolve_audiobook_series_episode(
+    query,
+    episode_number,
+):
+    query = _text(
+        query
+    )
+
+    episode = (
+        _normalize_series_sequence(
+            episode_number
+        )
+    )
+
+    if (
+        not query
+        or len(query) > 200
+    ):
+        raise ValueError(
+            "Invalid audiobook series query."
+        )
+
+    if not episode:
+        raise ValueError(
+            "Invalid audiobook episode number."
+        )
+
+    (
+        _score,
+        series_name,
+        series_id,
+    ) = _select_series(
+        query
+    )
+
+    items = _series_items(
+        series_id
+    )
+
+    matches = [
+        item
+        for item in items
+        if (
+            _normalize_series_sequence(
+                _series_sequence_from_item(
+                    item
+                )
+            )
+            == episode
+        )
+    ]
+
+    if not matches:
+        raise LookupError(
+            "This audiobook episode "
+            "does not exist in the series."
+        )
+
+    if len(matches) > 1:
+        raise LookupError(
+            "This audiobook episode number "
+            "is ambiguous in the series."
+        )
+
+    item = matches[0]
+    item_id = _text(
+        item.get("id")
+    )
+
+    result = resolve_audiobook(
+        item_id=item_id,
+    )
+
+    result["selection"] = {
+        "mode": "seriesEpisode",
+        "seriesId": series_id,
+        "seriesName": series_name,
+        "sequence":
+            _series_sequence_from_item(
+                item
+            ),
+        "candidateCount":
+            len(items),
+    }
+
+    return result
+
+
+def resolve_random_library_audiobook():
+    if not AUDIOBOOKSHELF_LIBRARY_ID:
+        raise RuntimeError(
+            "AUDIOBOOKSHELF_LIBRARY_ID is not configured."
+        )
+
+    response = abs_json(
+        "/api/libraries/"
+        + AUDIOBOOKSHELF_LIBRARY_ID
+        + "/items",
+        query={
+            "limit": 0,
+            "minified": 1,
+        },
+    )
+
+    items = [
+        item
+        for item in (
+            response.get("results")
+            or []
+        )
+        if _text(
+            item.get("id")
+        )
+        and _text(
+            item.get("mediaType")
+            or "book"
+        ).lower()
+        == "book"
+    ]
+
+    if not items:
+        raise LookupError(
+            "The audiobook library is empty."
+        )
+
+    item = secrets.choice(
+        items
+    )
+
+    item_id = _text(
+        item.get("id")
+    )
+
+    result = resolve_audiobook(
+        item_id=item_id,
+        from_start=True,
+    )
+
+    result["selection"] = {
+        "mode": "randomLibrary",
+        "candidateCount":
+            len(items),
+    }
+
+    return result
+
+
+def _started_audiobook_ids():
+    auth = abs_json(
+        "/api/authorize",
+        method="POST",
+        payload={},
+    )
+
+    user = (
+        auth.get("user")
+        or {}
+    )
+
+    return {
+        _text(
+            progress.get(
+                "libraryItemId"
+            )
+        )
+        for progress in (
+            user.get("mediaProgress")
+            or []
+        )
+        if _text(
+            progress.get(
+                "libraryItemId"
+            )
+        )
+    }
+
+
+def resolve_random_unheard_audiobook(
+    query,
+):
+    query = _text(
+        query
+    )
+
+    if (
+        not query
+        or len(query) > 200
+    ):
+        raise ValueError(
+            "Invalid audiobook series query."
+        )
+
+    (
+        _score,
+        series_name,
+        series_id,
+    ) = _select_series(
+        query
+    )
+
+    items = _series_items(
+        series_id
+    )
+
+    started_ids = (
+        _started_audiobook_ids()
+    )
+
+    candidates = [
+        item
+        for item in items
+        if _text(
+            item.get("id")
+        )
+        not in started_ids
+    ]
+
+    if not candidates:
+        raise LookupError(
+            "There are no unheard audiobooks "
+            "left in this series."
+        )
+
+    item = secrets.choice(
+        candidates
+    )
+
+    item_id = _text(
+        item.get("id")
+    )
+
+    result = resolve_audiobook(
+        item_id=item_id,
+        from_start=True,
+    )
+
+    result["selection"] = {
+        "mode": "randomUnheardSeries",
+        "seriesId": series_id,
+        "seriesName": series_name,
+        "sequence":
+            _series_sequence_from_item(
+                item
+            ),
+        "candidateCount":
+            len(candidates),
+        "seriesCount":
+            len(items),
+    }
+
+    return result
+
+
+VALID_SERIES_DIRECTIONS = {
+    "next",
+    "previous",
+}
+
+
+def resolve_audiobook_series_neighbor(
+    token,
+    direction,
+    offset_in_milliseconds=0,
+):
+    direction = _text(
+        direction
+    ).lower()
+
+    if (
+        direction
+        not in VALID_SERIES_DIRECTIONS
+    ):
+        raise ValueError(
+            "Invalid audiobook series direction."
+        )
+
+    token_data = parse_abs_token(
+        token
+    )
+
+    current_item_id = (
+        token_data["itemId"]
+    )
+
+    current_item = abs_json(
+        "/api/items/"
+        + current_item_id,
+        query={
+            "expanded": 1,
+            "include":
+                "progress,authors",
+        },
+    )
+
+    metadata = (
+        (current_item.get("media") or {})
+        .get("metadata")
+        or {}
+    )
+
+    series_entries = [
+        entry
+        for entry in _series_payload(
+            metadata
+        )
+        if _text(
+            entry.get("id")
+        )
+    ]
+
+    if not series_entries:
+        raise LookupError(
+            "The current audiobook "
+            "is not part of a series."
+        )
+
+    series_entry = (
+        series_entries[0]
+    )
+
+    series_id = _text(
+        series_entry.get("id")
+    )
+
+    series_name = _text(
+        series_entry.get("name")
+    )
+
+    items = _series_items(
+        series_id
+    )
+
+    current_indexes = [
+        index
+        for index, item in enumerate(
+            items
+        )
+        if _text(
+            item.get("id")
+        )
+        == current_item_id
+    ]
+
+    if len(current_indexes) != 1:
+        raise LookupError(
+            "The current audiobook "
+            "could not be located in its series."
+        )
+
+    current_index = (
+        current_indexes[0]
+    )
+
+    if direction == "next":
+        target_index = (
+            current_index + 1
+        )
+    else:
+        target_index = (
+            current_index - 1
+        )
+
+    if (
+        target_index < 0
+        or target_index >= len(items)
+    ):
+        return {
+            "status": "end",
+            "provider":
+                "audiobookshelf",
+            "selection": {
+                "mode":
+                    "seriesNeighbor",
+                "direction":
+                    direction,
+                "seriesId":
+                    series_id,
+                "seriesName":
+                    series_name,
+                "position":
+                    current_index + 1,
+                "count":
+                    len(items),
+            },
+        }
+
+    target_item = items[
+        target_index
+    ]
+
+    target_item_id = _text(
+        target_item.get("id")
+    )
+
+    close_audiobook_playback(
+        token,
+        "stopped",
+        offset_in_milliseconds,
+    )
+
+    result = resolve_audiobook(
+        item_id=target_item_id,
+        from_start=True,
+    )
+
+    result["selection"] = {
+        "mode": "seriesNeighbor",
+        "direction": direction,
+        "seriesId": series_id,
+        "seriesName": series_name,
+        "sequence":
+            _series_sequence_from_item(
+                target_item
+            ),
+        "position":
+            target_index + 1,
+        "count":
+            len(items),
+    }
+
+    return result
 
 
 def _select_track(

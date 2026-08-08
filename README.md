@@ -25,6 +25,11 @@ without exposing Navidrome or Audiobookshelf credentials to Alexa.
 - Seek forward or backward by a spoken duration
 - Play a specific chapter
 - Move to the next or previous chapter
+- Play a random audiobook from a series
+- Play a specific numbered episode from a series
+- Move to the next or previous audiobook in a series
+- Play a random audiobook from the entire library
+- Play a random unheard audiobook from a series
 
 ### Languages
 

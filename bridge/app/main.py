@@ -45,6 +45,11 @@ from scrobble import (
 from abs_bridge import (
     close_audiobook_playback,
     resolve_audiobook,
+    resolve_audiobook_series_episode,
+    resolve_audiobook_series_neighbor,
+    resolve_random_audiobook,
+    resolve_random_library_audiobook,
+    resolve_random_unheard_audiobook,
     restart_audiobook,
     seek_audiobook_chapter,
     seek_audiobook_time,
@@ -554,6 +559,25 @@ class BridgeHandler(
             False,
         )
 
+        random_series = payload.get(
+            "randomSeries",
+            False,
+        )
+
+        random_library = payload.get(
+            "randomLibrary",
+            False,
+        )
+
+        random_unheard_series = payload.get(
+            "randomUnheardSeries",
+            False,
+        )
+
+        episode_number = payload.get(
+            "episodeNumber"
+        )
+
         if not isinstance(
             from_start,
             bool,
@@ -562,9 +586,133 @@ class BridgeHandler(
                 "Invalid start option."
             )
 
+        for name, value in (
+            ("randomSeries", random_series),
+            ("randomLibrary", random_library),
+            (
+                "randomUnheardSeries",
+                random_unheard_series,
+            ),
+        ):
+            if not isinstance(
+                value,
+                bool,
+            ):
+                raise ValueError(
+                    "Invalid "
+                    + name
+                    + " option."
+                )
+
+        if isinstance(
+            episode_number,
+            (
+                bool,
+                dict,
+                list,
+            ),
+        ):
+            raise ValueError(
+                "Invalid audiobook episode number."
+            )
+
+        has_episode = (
+            episode_number is not None
+            and str(episode_number).strip()
+            != ""
+        )
+
+        selector_count = sum(
+            (
+                random_series,
+                random_library,
+                random_unheard_series,
+                has_episode,
+            )
+        )
+
+        if selector_count > 1:
+            raise ValueError(
+                "Conflicting audiobook selection options."
+            )
+
+        if random_library:
+            return (
+                resolve_random_library_audiobook()
+            )
+
+        if random_unheard_series:
+            return (
+                resolve_random_unheard_audiobook(
+                    query
+                )
+            )
+
+        if random_series:
+            return (
+                resolve_random_audiobook(
+                    query
+                )
+            )
+
+        if has_episode:
+            return (
+                resolve_audiobook_series_episode(
+                    query,
+                    episode_number,
+                )
+            )
+
         return resolve_audiobook(
             query,
             from_start=from_start,
+        )
+
+    def _abs_series_neighbor_request(
+        self,
+        payload,
+    ):
+        token = str(
+            payload.get(
+                "token",
+                "",
+            )
+        ).strip()
+
+        direction = str(
+            payload.get(
+                "direction",
+                "",
+            )
+        ).strip().lower()
+
+        offset_in_milliseconds = (
+            payload.get(
+                "offsetInMilliseconds",
+                0,
+            )
+        )
+
+        if (
+            not token
+            or len(token) > 1024
+        ):
+            raise ValueError(
+                "Invalid audiobook token."
+            )
+
+        if direction not in (
+            "next",
+            "previous",
+        ):
+            raise ValueError(
+                "Invalid audiobook series direction."
+            )
+
+        return resolve_audiobook_series_neighbor(
+            token,
+            direction,
+            offset_in_milliseconds,
         )
 
     def _abs_restart_request(
@@ -892,6 +1040,7 @@ class BridgeHandler(
 
         if path not in (
             "/api/audiobookshelf/resolve",
+            "/api/audiobookshelf/series-neighbor",
             "/api/audiobookshelf/restart",
             "/api/audiobookshelf/chapter",
             "/api/audiobookshelf/seek",
@@ -920,6 +1069,16 @@ class BridgeHandler(
             ):
                 result = (
                     self._abs_resolve_request(
+                        payload
+                    )
+                )
+
+            elif (
+                path
+                == "/api/audiobookshelf/series-neighbor"
+            ):
+                result = (
+                    self._abs_series_neighbor_request(
                         payload
                     )
                 )
