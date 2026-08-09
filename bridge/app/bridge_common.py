@@ -204,3 +204,41 @@ def create_navidrome_stream_url(
         f"{encoded_song_id}/{expires}/"
         f"{signature}.mp3"
     )
+
+
+def create_navidrome_cover_url(
+    cover_art_id,
+    lifetime_seconds,
+):
+    if (
+        lifetime_seconds < 1
+        or lifetime_seconds
+        > MAX_TOKEN_LIFETIME
+    ):
+        raise ValueError(
+            "Lifetime must be between 1 and "
+            f"{MAX_TOKEN_LIFETIME} seconds."
+        )
+
+    encoded_cover_art_id = (
+        encode_resource_id(
+            str(cover_art_id)
+        )
+    )
+
+    expires = (
+        int(time.time())
+        + lifetime_seconds
+    )
+
+    signature = create_signature(
+        "navidrome-cover",
+        encoded_cover_art_id,
+        expires,
+    )
+
+    return (
+        f"{PUBLIC_BASE_URL}/cover/navidrome/"
+        f"{encoded_cover_art_id}/{expires}/"
+        f"{signature}.jpg"
+    )

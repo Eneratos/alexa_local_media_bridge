@@ -65,6 +65,15 @@ ABS_STREAM_PATTERN = re.compile(
     r"([0-9a-f]{64})\.m4b$"
 )
 
+
+ABS_COVER_PATTERN = re.compile(
+    r"^/cover/audiobookshelf/"
+    r"([A-Za-z0-9_-]+)/"
+    r"([0-9]{10})/"
+    r"([0-9a-f]{64})\.jpg$"
+)
+
+
 ABS_TOKEN_PATTERN = re.compile(
     r"^abs1\."
     r"([A-Za-z0-9_-]+)\."
@@ -114,6 +123,25 @@ def _stream_signature(
     message = (
         "audiobookshelf|"
         + encoded_resource
+        + "|"
+        + str(expires)
+    ).encode("utf-8")
+
+    return hmac.new(
+        STREAM_SECRET,
+        message,
+        hashlib.sha256,
+    ).hexdigest()
+
+
+
+def _cover_signature(
+    encoded_item_id,
+    expires,
+):
+    message = (
+        "audiobookshelf-cover|"
+        + encoded_item_id
         + "|"
         + str(expires)
     ).encode("utf-8")
@@ -283,6 +311,55 @@ def create_abs_stream_url(
         + "/"
         + signature
         + ".m4b"
+    )
+
+
+
+def create_abs_cover_url(
+    item_id,
+    lifetime=None,
+):
+    if not PUBLIC_BASE_URL:
+        raise RuntimeError(
+            "PUBLIC_BASE_URL is not configured."
+        )
+
+    if lifetime is None:
+        lifetime = MUSIC_STREAM_TTL
+
+    lifetime = int(lifetime)
+
+    if (
+        lifetime < 60
+        or lifetime > MAX_TOKEN_LIFETIME
+    ):
+        raise ValueError(
+            "Invalid cover lifetime."
+        )
+
+    encoded_item_id = _encode_text(
+        str(item_id)
+    )
+
+    expires = (
+        int(time.time())
+        + lifetime
+    )
+
+    signature = _cover_signature(
+        encoded_item_id,
+        expires,
+    )
+
+    return (
+        PUBLIC_BASE_URL
+        + "/cover/audiobookshelf/"
+        + encoded_item_id
+        + "/"
+        + str(expires)
+        + "/"
+        + signature
+        + ".jpg"
     )
 
 
@@ -1489,6 +1566,20 @@ def resolve_audiobook(
             )
         )
 
+
+        cover_path = _text(
+            media.get("coverPath")
+            or item.get("coverPath")
+        )
+
+        cover_url = (
+            create_abs_cover_url(
+                item_id
+            )
+            if cover_path
+            else ""
+        )
+
         chapters = (
             media.get("chapters")
             or session.get(
@@ -1518,6 +1609,7 @@ def resolve_audiobook(
                 "itemId": item_id,
                 "title": title,
                 "author": author,
+                "coverUrl": cover_url,
                 "series":
                     _series_payload(
                         metadata
@@ -2491,6 +2583,206 @@ def close_audiobook_playback(
             ),
         },
     }
+
+
+def try_proxy_abs_cover(
+    handler,
+    path,
+    send_body,
+):
+    match = ABS_COVER_PATTERN.fullmatch(
+        path
+    )
+
+    if not match:
+        return False
+
+    encoded_item_id = match.group(1)
+    expires = int(match.group(2))
+    supplied_signature = match.group(3)
+
+    now = int(time.time())
+
+    if (
+        expires < now
+        or expires
+        > now + MAX_TOKEN_LIFETIME
+    ):
+        handler._send_empty(403)
+        return True
+
+    expected_signature = (
+        _cover_signature(
+            encoded_item_id,
+            expires,
+        )
+    )
+
+    if not hmac.compare_digest(
+        supplied_signature,
+        expected_signature,
+    ):
+        handler._send_empty(403)
+        return True
+
+    try:
+        item_id = _decode_text(
+            encoded_item_id
+        )
+
+        if (
+            not item_id
+            or len(item_id) > 200
+        ):
+            raise ValueError(
+                "Invalid item ID."
+            )
+
+    except Exception:
+        handler._send_empty(403)
+        return True
+
+    upstream_url = (
+        AUDIOBOOKSHELF_URL
+        + "/api/items/"
+        + urllib.parse.quote(
+            item_id,
+            safe="",
+        )
+        + "/cover?"
+        + urllib.parse.urlencode(
+            {
+                "width": 1024,
+                "format": "jpeg",
+            }
+        )
+    )
+
+    request = urllib.request.Request(
+        upstream_url,
+        headers={
+            "Authorization":
+                "Bearer "
+                + AUDIOBOOKSHELF_TOKEN,
+            "Accept":
+                "image/jpeg,image/png",
+            "Accept-Encoding":
+                "identity",
+            "User-Agent":
+                f"AlexaMediaBridge/{BRIDGE_VERSION}",
+        },
+        method="GET",
+    )
+
+    try:
+        response = urllib.request.urlopen(
+            request,
+            timeout=30,
+        )
+
+    except urllib.error.HTTPError as error:
+        if error.code == 404:
+            handler._send_empty(404)
+        else:
+            handler._send_empty(502)
+
+        error.close()
+        return True
+
+    except Exception as error:
+        print(
+            "Audiobookshelf cover error: "
+            + type(error).__name__,
+            flush=True,
+        )
+
+        handler._send_empty(502)
+        return True
+
+    with response:
+        if response.status != 200:
+            handler._send_empty(502)
+            return True
+
+        content_type = (
+            response.headers.get(
+                "Content-Type",
+                "",
+            )
+            .split(";", 1)[0]
+            .strip()
+            .lower()
+        )
+
+        if content_type not in (
+            "image/jpeg",
+            "image/png",
+        ):
+            handler._send_empty(502)
+            return True
+
+        handler.send_response(200)
+
+        handler.send_header(
+            "Content-Type",
+            content_type,
+        )
+
+        for header_name in (
+            "Content-Length",
+            "ETag",
+            "Last-Modified",
+        ):
+            value = response.headers.get(
+                header_name
+            )
+
+            if value:
+                handler.send_header(
+                    header_name,
+                    value,
+                )
+
+        handler.send_header(
+            "Cache-Control",
+            "public, max-age=3600",
+        )
+
+        if not response.headers.get(
+            "Content-Length"
+        ):
+            handler.send_header(
+                "Connection",
+                "close",
+            )
+            handler.close_connection = True
+
+        handler._common_headers()
+        handler.end_headers()
+
+        if not send_body:
+            return True
+
+        while True:
+            chunk = response.read(
+                128 * 1024
+            )
+
+            if not chunk:
+                break
+
+            try:
+                handler.wfile.write(
+                    chunk
+                )
+            except (
+                BrokenPipeError,
+                ConnectionResetError,
+            ):
+                break
+
+    return True
+
 
 def _send_416(
     handler,

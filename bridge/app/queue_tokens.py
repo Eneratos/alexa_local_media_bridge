@@ -7,6 +7,7 @@ import re
 
 from bridge_common import (
     STREAM_SECRET,
+    create_navidrome_cover_url,
     create_navidrome_stream_url,
     decode_resource_id,
     encode_resource_id,
@@ -138,6 +139,22 @@ def _track_result(
 
     track = tracks[index]
 
+    match = dict(track)
+
+    cover_art_id = str(
+        track.get("coverArt")
+        or ""
+    ).strip()
+
+    if cover_art_id:
+        match["coverUrl"] = (
+            create_navidrome_cover_url(
+                cover_art_id,
+                MUSIC_STREAM_TTL,
+            )
+        )
+
+
     token = create_queue_token(
         queue["kind"],
         queue["resourceId"],
@@ -147,7 +164,7 @@ def _track_result(
     return {
         "status": "ok",
         "provider": "navidrome",
-        "match": track,
+        "match": match,
         "queue": {
             "kind": queue["kind"],
             "title": queue["title"],

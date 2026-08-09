@@ -53,6 +53,7 @@ from abs_bridge import (
     restart_audiobook,
     seek_audiobook_chapter,
     seek_audiobook_time,
+    try_proxy_abs_cover,
     try_proxy_abs_stream,
 )
 
@@ -76,6 +77,15 @@ NAVIDROME_STREAM_PATTERN = re.compile(
     r"([A-Za-z0-9_-]+)/"
     r"([0-9]{10})/"
     r"([0-9a-f]{64})\.mp3$"
+)
+
+
+
+NAVIDROME_COVER_PATTERN = re.compile(
+    r"^/cover/navidrome/"
+    r"([A-Za-z0-9_-]+)/"
+    r"([0-9]{10})/"
+    r"([0-9a-f]{64})\.jpg$"
 )
 
 
@@ -111,6 +121,27 @@ class BridgeHandler(
             r"[0-9a-f]{64}\.m4b",
             "/stream/audiobookshelf/"
             "<redacted>.m4b",
+            message,
+        )
+
+
+        message = re.sub(
+            r"/cover/navidrome/"
+            r"[A-Za-z0-9_-]+/"
+            r"[0-9]{10}/"
+            r"[0-9a-f]{64}\.jpg",
+            "/cover/navidrome/"
+            "<redacted>.jpg",
+            message,
+        )
+
+        message = re.sub(
+            r"/cover/audiobookshelf/"
+            r"[A-Za-z0-9_-]+/"
+            r"[0-9]{10}/"
+            r"[0-9a-f]{64}\.jpg",
+            "/cover/audiobookshelf/"
+            "<redacted>.jpg",
             message,
         )
 
@@ -274,6 +305,141 @@ class BridgeHandler(
             raise ValueError(
                 "Invalid JSON."
             )
+
+
+    def _proxy_navidrome_cover(
+        self,
+        cover_art_id,
+        send_body,
+    ):
+        upstream_url = navidrome_url(
+            "getCoverArt",
+            {
+                "id": cover_art_id,
+                "size": 1024,
+            },
+        )
+
+        request = urllib.request.Request(
+            upstream_url,
+            headers={
+                "Accept":
+                    "image/jpeg,image/png",
+                "Accept-Encoding":
+                    "identity",
+                "User-Agent":
+                    f"AlexaMediaBridge/{BRIDGE_VERSION}",
+            },
+            method="GET",
+        )
+
+        try:
+            response = urllib.request.urlopen(
+                request,
+                timeout=30,
+            )
+
+        except urllib.error.HTTPError as error:
+            if error.code == 404:
+                self._send_empty(404)
+            else:
+                self._send_empty(502)
+
+            error.close()
+            return
+
+        except Exception as error:
+            print(
+                "Navidrome cover error: "
+                + type(error).__name__,
+                flush=True,
+            )
+
+            self._send_empty(502)
+            return
+
+        with response:
+            if response.status != 200:
+                self._send_empty(502)
+                return
+
+            content_type = (
+                response.headers.get(
+                    "Content-Type",
+                    "",
+                )
+                .split(";", 1)[0]
+                .strip()
+                .lower()
+            )
+
+            if content_type not in (
+                "image/jpeg",
+                "image/png",
+            ):
+                self._send_empty(502)
+                return
+
+            self.send_response(200)
+
+            self.send_header(
+                "Content-Type",
+                content_type,
+            )
+
+            for header_name in (
+                "Content-Length",
+                "ETag",
+                "Last-Modified",
+            ):
+                value = response.headers.get(
+                    header_name
+                )
+
+                if value:
+                    self.send_header(
+                        header_name,
+                        value,
+                    )
+
+            self.send_header(
+                "Cache-Control",
+                "public, max-age=3600",
+            )
+
+            if not response.headers.get(
+                "Content-Length"
+            ):
+                self.send_header(
+                    "Connection",
+                    "close",
+                )
+                self.close_connection = True
+
+            self._common_headers()
+            self.end_headers()
+
+            if not send_body:
+                return
+
+            while True:
+                chunk = response.read(
+                    128 * 1024
+                )
+
+                if not chunk:
+                    break
+
+                try:
+                    self.wfile.write(
+                        chunk
+                    )
+                except (
+                    BrokenPipeError,
+                    ConnectionResetError,
+                ):
+                    break
+
 
     def _proxy_navidrome(
         self,
@@ -479,6 +645,7 @@ class BridgeHandler(
                 ):
                     break
 
+
     def _dispatch_get(
         self,
         send_body,
@@ -493,11 +660,62 @@ class BridgeHandler(
             )
             return
 
+        if try_proxy_abs_cover(
+            self,
+            path,
+            send_body,
+        ):
+            return
+
         if try_proxy_abs_stream(
             self,
             path,
             send_body,
         ):
+            return
+
+        cover_match = (
+            NAVIDROME_COVER_PATTERN
+            .fullmatch(path)
+        )
+
+        if cover_match:
+            encoded_cover_art_id = (
+                cover_match.group(1)
+            )
+
+            expires = int(
+                cover_match.group(2)
+            )
+
+            supplied_signature = (
+                cover_match.group(3)
+            )
+
+            if not signature_is_valid(
+                "navidrome-cover",
+                encoded_cover_art_id,
+                expires,
+                supplied_signature,
+            ):
+                self._send_empty(403)
+                return
+
+            try:
+                cover_art_id = (
+                    decode_resource_id(
+                        encoded_cover_art_id
+                    )
+                )
+
+            except Exception:
+                self._send_empty(403)
+                return
+
+            self._proxy_navidrome_cover(
+                cover_art_id,
+                send_body,
+            )
             return
 
         match = (
@@ -534,6 +752,7 @@ class BridgeHandler(
             song_id = decode_resource_id(
                 encoded_song_id
             )
+
         except Exception:
             self._send_empty(403)
             return
@@ -542,6 +761,7 @@ class BridgeHandler(
             song_id,
             send_body,
         )
+
 
     def _abs_resolve_request(
         self,

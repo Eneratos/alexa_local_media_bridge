@@ -63,6 +63,9 @@ def _song_payload(song):
         "title": _text(song.get("title")),
         "artist": _text(song.get("artist")),
         "album": _text(song.get("album")),
+        "coverArt": _text(
+            song.get("coverArt")
+        ),
         "duration": _integer(
             song.get("duration")
         ),

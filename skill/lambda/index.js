@@ -800,6 +800,7 @@ function getAudioPlayerState(handlerInput) {
 }
 
 
+
 function createPlayDirective(
     result,
     playBehavior,
@@ -818,19 +819,43 @@ function createPlayDirective(
             expectedPreviousToken;
     }
 
+    const metadata = {
+        title:
+            result.match.title || '',
+        subtitle:
+            result.match.artist
+            || result.match.author
+            || ''
+    };
+
+    const coverUrl = String(
+        result.match.coverUrl || ''
+    ).trim();
+
+    if (coverUrl) {
+        metadata.art = {
+            sources: [
+                {
+                    url: coverUrl
+                }
+            ]
+        };
+
+        metadata.backgroundImage = {
+            sources: [
+                {
+                    url: coverUrl
+                }
+            ]
+        };
+    }
+
     return {
         type: 'AudioPlayer.Play',
         playBehavior: playBehavior,
         audioItem: {
             stream: stream,
-            metadata: {
-                title:
-                    result.match.title || '',
-                subtitle:
-                    result.match.artist
-                    || result.match.author
-                    || ''
-            }
+            metadata: metadata
         }
     };
 }
