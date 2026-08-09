@@ -33,10 +33,7 @@ jobs:
           cache-dependency-path: skill/lambda/package-lock.json
 
       - name: Check Python syntax
-        run: python -m compileall -q bridge/app tests
-
-      - name: Test synchronized lyrics
-        run: python tests/test_lyrics.py
+        run: python -m compileall -q bridge/app
 
       - name: Check shell syntax
         run: |
@@ -53,9 +50,6 @@ jobs:
       - name: Check Lambda syntax
         working-directory: skill/lambda
         run: node --check index.js
-
-      - name: Test Lambda media metadata
-        run: node tests/test_lambda_media_metadata.js
 
       - name: Validate JSON files
         run: |

@@ -12,7 +12,6 @@ from bridge_common import (
     decode_resource_id,
     encode_resource_id,
 )
-from lyrics import create_navidrome_caption_data
 from resolver import load_queue
 
 
@@ -128,6 +127,7 @@ def _track_result(
     index,
 ):
     tracks = queue["tracks"]
+
     if (
         index < 0
         or index >= len(tracks)
@@ -154,34 +154,12 @@ def _track_result(
             )
         )
 
+
     token = create_queue_token(
         queue["kind"],
         queue["resourceId"],
         index,
     )
-
-    stream = {
-        "url":
-            create_navidrome_stream_url(
-                track["id"],
-                MUSIC_STREAM_TTL,
-            ),
-        "token": token,
-        "ttlSeconds":
-            MUSIC_STREAM_TTL,
-    }
-
-    caption_data = (
-        create_navidrome_caption_data(
-            track["id"],
-            track.get("duration"),
-        )
-    )
-
-    if caption_data:
-        stream["captionData"] = (
-            caption_data
-        )
 
     return {
         "status": "ok",
@@ -197,7 +175,16 @@ def _track_result(
             "hasNext":
                 index + 1 < len(tracks),
         },
-        "stream": stream,
+        "stream": {
+            "url":
+                create_navidrome_stream_url(
+                    track["id"],
+                    MUSIC_STREAM_TTL,
+                ),
+            "token": token,
+            "ttlSeconds":
+                MUSIC_STREAM_TTL,
+        },
     }
 
 

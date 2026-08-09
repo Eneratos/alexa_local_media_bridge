@@ -2,7 +2,7 @@ name: alexa-local-media-bridge
 
 services:
   alexa-media-bridge:
-    image: ghcr.io/eneratos/alexa-local-media-bridge:${IMAGE_TAG:-1.2.0}
+    image: ghcr.io/eneratos/alexa-local-media-bridge:${IMAGE_TAG:-1.1.2}
     restart: unless-stopped
     init: true
     read_only: true
