@@ -24,6 +24,7 @@ COPY app/abs_bridge.py \
      app/config_validation.py \
      app/main.py \
      app/queue_tokens.py \
+     app/lyrics.py \
      app/resolver.py \
      app/scrobble.py \
      /app/

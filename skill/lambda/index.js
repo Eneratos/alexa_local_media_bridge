@@ -814,6 +814,22 @@ function createPlayDirective(
             offsetInMilliseconds || 0
     };
 
+    const captionData =
+        result.stream.captionData;
+
+    if (
+        captionData
+        && captionData.type === 'WEBVTT'
+        && typeof captionData.content === 'string'
+        && captionData.content.trim()
+    ) {
+        stream.captionData = {
+            type: 'WEBVTT',
+            content: captionData.content
+        };
+    }
+
+
     if (playBehavior === 'ENQUEUE') {
         stream.expectedPreviousToken =
             expectedPreviousToken;
