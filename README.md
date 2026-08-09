@@ -15,6 +15,7 @@ without exposing Navidrome or Audiobookshelf credentials to Alexa.
 - Use standard Alexa AudioPlayer controls
 - Continue through generated playback queues
 - Submit Navidrome scrobbles during music playback
+- Show Navidrome cover artwork on compatible Alexa devices
 
 ### Audiobooks
 
@@ -30,6 +31,7 @@ without exposing Navidrome or Audiobookshelf credentials to Alexa.
 - Move to the next or previous audiobook in a series
 - Play a random audiobook from the entire library
 - Play a random unheard audiobook from a series
+- Show Audiobookshelf cover artwork on compatible Alexa devices
 
 ### Languages
 
@@ -47,7 +49,12 @@ The project contains two runtime components:
 
 Alexa sends skill requests to Lambda. Lambda authenticates to the bridge,
 which resolves media through Navidrome or Audiobookshelf and returns
-short-lived signed HTTPS stream URLs.
+short-lived signed HTTPS stream and cover-art URLs.
+
+When source artwork is available, the Lambda function includes it in the
+Alexa AudioPlayer metadata. Display-capable Alexa devices can therefore show
+the current music or audiobook cover without exposing Navidrome or
+Audiobookshelf directly to Alexa.
 
 The bridge is intended to run behind an HTTPS reverse proxy. Its container
 port should not be published directly to the internet.
@@ -120,7 +127,7 @@ VERSION               Authoritative project version
 ## Security model
 
 - Lambda authenticates control requests with `CONTROL_SECRET`.
-- Stream URLs are signed with `STREAM_SECRET` and expire automatically.
+- Stream and cover-art URLs are signed with `STREAM_SECRET` and expire automatically.
 - Backend credentials are stored only in the local bridge environment.
 - The container runs without root privileges.
 - The container filesystem is read-only.

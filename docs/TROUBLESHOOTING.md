@@ -269,6 +269,38 @@ media item.
 Never publish a signed stream URL while troubleshooting. It temporarily
 grants access to the referenced media stream.
 
+## Cover artwork is missing
+
+Cover artwork is optional and does not affect audio playback. Devices without
+a display are expected to ignore the artwork metadata.
+
+If playback works on a display-capable Alexa device but the cover is missing,
+check:
+
+- The resolved Navidrome song contains a usable `coverArt` identifier
+- The resolved Audiobookshelf item contains associated cover artwork
+- `PUBLIC_BASE_URL` is publicly reachable over HTTPS
+- The reverse proxy permits signed cover-art requests
+- The bridge can retrieve the image from the corresponding backend
+- The returned image is JPEG or PNG
+- Bridge and Lambda components come from the same project release
+
+A valid signed cover URL should return HTTP `200`.
+
+Never publish a complete signed cover URL while troubleshooting. Like a
+signed media URL, it grants temporary access to the referenced resource.
+
+Artwork display can occasionally vary between repeated Alexa playback
+requests. Before changing configuration for an intermittent problem, start
+the media item again and check whether the cover is then requested and
+displayed.
+
+For Audiobookshelf, verify that the item still has cover metadata and that
+its cover API endpoint returns an image.
+
+For Navidrome, verify that the resolved song still contains `coverArt` and
+that Navidrome can return the corresponding cover image.
+
 ## Audiobook progress is not restored
 
 Progress synchronization requires the same Audiobookshelf user and

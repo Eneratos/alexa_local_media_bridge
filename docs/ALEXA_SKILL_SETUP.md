@@ -123,6 +123,23 @@ to the bridge.
 After saving the variables, deploy or save the updated function
 configuration.
 
+## Cover artwork
+
+Cover artwork requires no additional interaction-model configuration.
+
+When the bridge returns a cover URL for a Navidrome track or Audiobookshelf
+item, the Lambda function adds the image to the `AudioPlayer.Play` metadata
+as both artwork and background artwork.
+
+Compatible display-capable Alexa devices, such as Echo Show devices, can
+display this metadata during playback. Alexa devices without a display use
+the same playback directives and require no special configuration.
+
+The image URL points to the public bridge rather than directly to Navidrome
+or Audiobookshelf and is temporary and cryptographically signed.
+
+Missing artwork does not prevent media playback.
+
 ## Create the Alexa custom skill
 
 Open the Alexa Developer Console and create a new skill.
@@ -357,6 +374,8 @@ Confirm that the device language matches the locale being tested.
 Repeat the main regression tests on the device, especially:
 
 - Starting music and audiobooks
+- Cover artwork on display-capable devices when source artwork is available
+- Normal playback on devices without a display
 - Audio playback continuing after the spoken response
 - Pause and resume
 - Next and previous controls

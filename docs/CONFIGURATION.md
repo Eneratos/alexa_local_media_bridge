@@ -63,8 +63,8 @@ stack.
 
 ### `PUBLIC_BASE_URL`
 
-Defines the public HTTPS address used for signed media URLs and API
-requests.
+Defines the public HTTPS address used for signed media stream and
+cover-art URLs and API requests.
 
 Example:
 
@@ -88,7 +88,7 @@ on internal HTTP port `8000`.
 
 ### `STREAM_SECRET`
 
-Signs temporary Navidrome and Audiobookshelf stream URLs.
+Signs temporary Navidrome and Audiobookshelf stream and cover-art URLs.
 
 ### `CONTROL_SECRET`
 
@@ -116,7 +116,7 @@ To rotate the control secret:
 5. Test the Alexa skill.
 
 Rotating `STREAM_SECRET` immediately invalidates previously generated
-signed stream URLs.
+signed stream and cover-art URLs.
 
 ## Navidrome
 
@@ -203,6 +203,27 @@ The configured token must be permitted to:
 - Read and update playback progress
 
 Use a dedicated Audiobookshelf user when possible.
+
+## Cover artwork
+
+Cover artwork requires no additional environment variables.
+
+For Navidrome music, the bridge uses the `coverArt` identifier returned by
+Navidrome and provides the image through a temporary signed HTTPS URL.
+
+For Audiobookshelf, the bridge uses the cover associated with the resolved
+library item and provides it through a temporary signed HTTPS URL.
+
+Navidrome and Audiobookshelf remain internal services. Alexa receives the
+public bridge URL rather than backend credentials or internal service
+addresses.
+
+Cover artwork is optional. Playback continues when no cover is available.
+Display-capable Alexa devices may show the supplied artwork, while devices
+without a display continue normal audio playback.
+
+The reverse proxy must allow requests to the signed cover-art paths as well
+as the media-stream paths.
 
 ## Signed URL lifetime
 

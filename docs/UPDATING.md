@@ -162,6 +162,8 @@ After updating all required components, test:
 - German and English launch requests
 - Music search and playback
 - Audiobook search and playback
+- Cover artwork on a display-capable Alexa device when artwork is available
+- Playback on an Alexa device without a display
 - Pause, resume, next, and previous controls
 - Audiobook progress restoration
 - Chapter selection and seeking
@@ -215,5 +217,6 @@ Before deleting the previous release, confirm:
 - The reported bridge version is correct
 - Both Alexa locales work
 - Music and audiobook playback work
+- Cover artwork works on a display-capable device when artwork is available
 - Audiobook progress is saved and restored
 - The previous release is no longer needed for rollback
